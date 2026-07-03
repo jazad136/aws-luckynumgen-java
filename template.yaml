@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  LuckynumgenSingle1x
+
+  Sample SAM Template for LuckynumgenSingle1x
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 128
+
+Resources:
+  LuckynumgenSingle1x:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/LuckynumgenSingle1x
+      Handler: com.jschway.luckynumgen.HandleOne::handleRequest
+      Runtime: java17
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Events:
+        LuckynumgenSingle1x:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /onex
+            Method: get
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  LuckynumgenSingle1xApi:
+    Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"
+  LuckynumgenSingle1x:
+    Description: "Lucky Num Gen  Lambda Java ARN"
+    Value: !GetAtt LuckynumgenSingle1x.Arn
+  LuckynumgenSingle1xIamRole:
+    Description: "Implicit IAM Role created for Lucky Num Gen Lambda Java"
+    Value: !GetAtt LuckynumgenSingle1x.Arn
