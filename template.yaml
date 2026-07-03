@@ -34,7 +34,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   LuckynumgenSingle1xApi:
     Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/onex/"
   LuckynumgenSingle1x:
     Description: "Lucky Num Gen  Lambda Java ARN"
     Value: !GetAtt LuckynumgenSingle1x.Arn
