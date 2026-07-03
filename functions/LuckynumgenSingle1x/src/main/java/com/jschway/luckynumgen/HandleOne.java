@@ -23,10 +23,17 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         headers.put("X-Custom-Header", "application/json");
         Random r = new Random();
         int numberOut = r.nextInt(0,10);
+        int position = r.nextInt(2);
+        String stringOut = "" + numberOut;
+        if(position == 0) { 
+            stringOut = "1" + numberOut;
+        }
+        else 
+            stringOut = numberOut + "1";
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                 .withHeaders(headers);
        
-        String output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", numberOut);
+        String output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", stringOut);
         return response
                 .withStatusCode(200)
                 .withBody(output);
