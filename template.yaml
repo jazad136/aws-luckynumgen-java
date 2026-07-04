@@ -26,7 +26,37 @@ Resources:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /onex
-            Method: get
+            Method: any
+  LuckynumgenSingle2x:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/LuckynumgenSingle2x
+      Handler: com.jschway.luckynumgen.HandleTwo::handleRequest
+      Runtime: java17
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Events:
+        LuckynumgenSingle1x:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /twox
+            Method: any
+  LuckynumgenSingle3x:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/LuckynumgenSingle3x
+      Handler: com.jschway.luckynumgen.HandleThree::handleRequest
+      Runtime: java17
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Events:
+        LuckynumgenSingle1x:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /threex
+            Method: any
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
