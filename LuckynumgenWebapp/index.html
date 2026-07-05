@@ -44,7 +44,7 @@ input, select, button, #resultBox {
         <input type="submit" id="generate"  value="Generate Lucky Number"/>
     </div>
     <div>
-        <input type="number" id="output1"  placeholder="output" readonly>
+        <input type="text" id="output1"  placeholder="output">
     </div>
     <div>
         <h3 id="selectedLabel">You Selected:</h3>
@@ -66,11 +66,14 @@ input, select, button, #resultBox {
 <script>
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
-        var apiUrl =  'https://bfeawecgeg.execute-api.us-east-1.amazonaws.com/Prod/onex';
+        var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
         if(document.getElementById("selection").value == 1) {
             fetch(apiUrl)
                 .then(response => response.json())
-                .then(data => document.getElementById('output1').innerText = data.number)
+                .then(data => {
+                    var number = data.number
+                    document.getElementById('output1').value = number;
+                })
                 .catch(error => console.error('Error:',error))
         }
     };
