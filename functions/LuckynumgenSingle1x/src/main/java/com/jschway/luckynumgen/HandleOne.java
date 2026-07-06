@@ -20,7 +20,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         headers.put("X-Custom-Header", "application/json");
         Map<String, List<String>> multiValueHeaders = Map.of(
 //            "Access-Control-Allow-Origin",List.of("*")
-            "Access-Control-Allow-Origin",List.of("https://jschway.com/","https://mybucket-jschway813.s3.us-east-1.amazonaws.com/")
+            "Access-Control-Allow-Origin",List.of("https://jschway.com","https://mybucket-jschway813.s3.us-east-1.amazonaws.com")
         );
         
         Random r = new Random();
