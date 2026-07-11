@@ -22,20 +22,39 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
 //            "Access-Control-Allow-Origin",List.of("*")
             "Access-Control-Allow-Origin",List.of("https://jschway.com","https://mybucket-jschway813.s3.us-east-1.amazonaws.com")
         );
-        
-        Random r = new Random();
-        int numberOut = r.nextInt(0,10);
-        int position = r.nextInt(2);
-        String stringOut = "" + numberOut;
-        if(position == 0) { 
-            stringOut = "1" + stringOut;
+        String lastX = null;
+        for (var x : input.getPathParameters().values()) { 
+            lastX = x;
         }
-        else 
-            stringOut = stringOut + "1";
+        String numberIn = "";
+        if (lastX != null) { 
+            numberIn = switch(lastX) { 
+                case "1" -> "1";
+                case "2" -> "2";
+                case "3" -> "3";
+                default -> "";
+            };
+        }
+        String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
-                .withHeaders(headers)
-                .withMultiValueHeaders(multiValueHeaders);
-        String output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", stringOut);
+                    .withHeaders(headers)
+                    .withMultiValueHeaders(multiValueHeaders);
+        if(numberIn.isEmpty()) { 
+            output = String.format("{ \"message\": \"Value %s is out of range\" }", lastX);
+        }
+        else {
+            Random r = new Random();
+            int numberOut = r.nextInt(0,10);
+            int position = r.nextInt(2);
+            String stringOut = "" + numberOut;
+            if(position == 0) { 
+                stringOut = "1" + stringOut;
+            }
+            else 
+                stringOut = stringOut + "1";
+            
+            output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", stringOut);
+        }
         return response
                 .withStatusCode(200)
                 .withBody(output);

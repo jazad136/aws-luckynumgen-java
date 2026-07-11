@@ -17,56 +17,62 @@ Resources:
     Properties:
       CodeUri: functions/LuckynumgenSingle1x
       Handler: com.jschway.luckynumgen.HandleOne::handleRequest
-      Runtime: java17
+      Runtime: java21
+      MemorySize: 128
       Architectures:
         - x86_64
-      MemorySize: 128
       Events:
         LuckynumgenSingle1x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /onex
             Method: any
+            Path: /onex/{proxy+}
   LuckynumgenSingle2x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: functions/LuckynumgenSingle2x
       Handler: com.jschway.luckynumgen.HandleTwo::handleRequest
-      Runtime: java17
+      Runtime: java21
+      MemorySize: 128
       Architectures:
         - x86_64
-      MemorySize: 128
       Events:
         LuckynumgenSingle1x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /twox
             Method: any
+            Path: /twox/{proxy+}
   LuckynumgenSingle3x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: functions/LuckynumgenSingle3x
       Handler: com.jschway.luckynumgen.HandleThree::handleRequest
-      Runtime: java17
+      Runtime: java21
+      MemorySize: 128
       Architectures:
         - x86_64
-      MemorySize: 128
       Events:
         LuckynumgenSingle1x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /threex
             Method: any
+            Path: /threex/{proxy+}
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   LuckynumgenSingle1xApi:
-    Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"
+    Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen OneX function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/onex/"
+  LuckynumgenSingle2xApi:
+    Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen TwoX function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/twox/"
+  LuckynumgenSingle3xApi:
+    Description: "API Gateway endpoint URL for Prod stage for Lucky Num Gen ThreeX function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/threex/"
   LuckynumgenSingle1x:
-    Description: "Lucky Num Gen  Lambda Java ARN"
+    Description: "Lucky Num Gen OneX Lambda Java ARN"
     Value: !GetAtt LuckynumgenSingle1x.Arn
   LuckynumgenSingle1xIamRole:
     Description: "Implicit IAM Role created for Lucky Num Gen Lambda Java"
