@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -22,12 +23,13 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
 //            "Access-Control-Allow-Origin",List.of("*")
             "Access-Control-Allow-Origin",List.of("https://jschway.com","https://mybucket-jschway813.s3.us-east-1.amazonaws.com")
         );
-        String lastX = null;
-        for (var x : input.getPathParameters().values()) { 
-            lastX = x;
-        }
+        String lastX = "";
+        if(input.getPathParameters() != null)
+            for (var x : input.getPathParameters().values())  
+                lastX = x;
+            
         String numberIn = "";
-        if (lastX != null) { 
+        if (!lastX.isBlank()) { 
             numberIn = switch(lastX) { 
                 case "1" -> "1";
                 case "2" -> "2";
@@ -43,20 +45,40 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             output = String.format("{ \"message\": \"Value %s is out of range\" }", lastX);
         }
         else {
-            Random r = new Random();
-            int numberOut = r.nextInt(0,10);
-            int position = r.nextInt(2);
-            String stringOut = "" + numberOut;
-            if(position == 0) { 
-                stringOut = "1" + stringOut;
-            }
-            else 
-                stringOut = stringOut + "1";
-            
-            output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", stringOut);
+            List<String> previous = new LinkedList<>();
+            previous.add(newLuckyNumber(numberIn));
+            previous.add(newLuckyNumber(numberIn, previous));
+            previous.add(newLuckyNumber(numberIn, previous));
+            String messagePart = "\"message\": \"Lucky Number\"";
+            String luckyNum1Part = String.format("\"number1\": \"%s\"", previous.get(0));
+            String luckyNum2Part = String.format("\"number2\": \"%s\"", previous.get(1));
+            String luckyNum3Part = String.format("\"number3\": \"%s\"", previous.get(2));
+            output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
+//            output = String.format("{ \"message\": \"Lucky Number\", \"number\": \"%s\" }", luckyNum1);
         }
         return response
                 .withStatusCode(200)
                 .withBody(output);
+    }
+    
+    public String newLuckyNumber(String numberIn) { 
+        Random r = new Random();
+        int randomPart = r.nextInt(0,9)+1;
+        int position = r.nextInt(2);
+        String stringOut = "" + randomPart;
+        if(position == 0) { 
+            stringOut = numberIn + stringOut;
+        }
+        else 
+            stringOut = stringOut + numberIn;
+        return stringOut;
+    }
+    
+    public String newLuckyNumber(String numberIn, List<String> previous) { 
+        String stringOut = "";
+        do { 
+            stringOut = newLuckyNumber(numberIn);
+        } while(previous.contains(stringOut)); // do not regenerate a number
+        return stringOut;
     }
 }
