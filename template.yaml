@@ -15,7 +15,7 @@ Resources:
   LuckynumgenSingle1x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: functions/LuckynumgenSingle1x
+      CodeUri: function/LuckynumgenSingle1x
       Handler: com.jschway.luckynumgen.HandleOne::handleRequest
       Runtime: java21
       MemorySize: 128
@@ -30,7 +30,7 @@ Resources:
   LuckynumgenSingle2x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: functions/LuckynumgenSingle2x
+      CodeUri: function/LuckynumgenSingle2x
       Handler: com.jschway.luckynumgen.HandleTwo::handleRequest
       Runtime: java21
       MemorySize: 128
@@ -45,7 +45,7 @@ Resources:
   LuckynumgenSingle3x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: functions/LuckynumgenSingle3x
+      CodeUri: function/LuckynumgenSingle3x
       Handler: com.jschway.luckynumgen.HandleThree::handleRequest
       Runtime: java21
       MemorySize: 128
