@@ -52,18 +52,28 @@ input, select, button, #resultBox {
     </div>
     <div>
         <input type="button" id="sel1" value="1" onclick="setSelected(1)"/>
-        <input type="button" id="sel2" value="2" onclick="alert('You clicked 2')"/>
-        <input type="button" id="sel3" value="3"/>
-        <button id="sel4" value="4">4</button>
-        <button id="sel5" value="5">5</button>
-    <div>
-        <button id="sel6" value="6">6</button>
+        <!-- <input type="button" id="sel2" value="2" onclick="alert('You clicked 2')"/> -->
+        <input type="button" id="sel2" value="2" onclick="setSelected(2)"/>
+        <input type="button" id="sel3" value="3" onclick="setSelected(3)"/>
+        <input type="button" id="sel4" value="4" onclick="setSelected(4)"/>
+        <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
+        <!-- <button id="sel4" value="4">4</button> -->
+        <!-- <button id="sel5" value="5">5</button> -->
+        <div>
+        <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
+        <!-- <button id="sel6" value="6">6</button> -->
+        <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
+        <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
+        <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
         <button id="sel7" value="7">7</button>
         <button id="sel8" value="8">8</button>
         <button id="sel9" value="9">9</button>
     </div>
 </form>
 <script>
+    function setSelected(number) { 
+        document.getElementById("selection").value = number;
+    }
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
         var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
@@ -78,9 +88,7 @@ input, select, button, #resultBox {
         }
     };
 
-    function setSelected(number) { 
-        document.getElementById("selection").value = number;
-    }
+
 </script>
 </body>
 </html>
