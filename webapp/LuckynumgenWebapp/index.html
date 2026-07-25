@@ -44,7 +44,9 @@ input, select, button, #resultBox {
         <input type="submit" id="generate"  value="Generate Lucky Number"/>
     </div>
     <div>
-        <input type="text" id="output1"  placeholder="output">
+        <input type="text" id="output1" value=""/>
+        <input type="text" id="output2" value=""/>
+        <input type="text" id="output3" value=""/>
     </div>
     <div>
         <h3 id="selectedLabel">You Selected:</h3>
@@ -56,36 +58,68 @@ input, select, button, #resultBox {
         <input type="button" id="sel2" value="2" onclick="setSelected(2)"/>
         <input type="button" id="sel3" value="3" onclick="setSelected(3)"/>
         <input type="button" id="sel4" value="4" onclick="setSelected(4)"/>
-        <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
         <!-- <button id="sel4" value="4">4</button> -->
         <!-- <button id="sel5" value="5">5</button> -->
         <div>
+            <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
         <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
         <!-- <button id="sel6" value="6">6</button> -->
         <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
         <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
         <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
-        <button id="sel7" value="7">7</button>
-        <button id="sel8" value="8">8</button>
-        <button id="sel9" value="9">9</button>
+
     </div>
 </form>
 <script>
     function setSelected(number) { 
         document.getElementById("selection").value = number;
     }
+    function chooseApp(selVal) { 
+        app = 'onex'
+        if(selVal === '1' 
+        || selVal === '2' 
+        || selVal === '3') 
+        {
+            app = 'onex'
+        }
+        else if(selVal === '4' 
+            || selVal === '5' 
+            || selVal === '6') 
+        {
+            app = 'twox'
+        }
+        else if(selVal === '7' 
+            || selVal === '8' 
+            || selVal === '9') 
+        {
+            app = 'threex'
+        }
+        return app
+    }
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
-        var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
-        if(document.getElementById("selection").value == 1) {
+        // var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
+        var apiUrl = '';
+        const selVal = document.getElementById("selection").value
+        if(selVal && selVal !== '') {
+            const dplmtStem =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/;                 
+            const app = chooseApp(selVal)
+            apiUrl = `${dplmtStem}/${app}/${selVal}`
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    var number = data.number
-                    document.getElementById('output1').value = number;
+                    var number1 = data.number1
+                    var number2 = data.number2
+                    var number3 = data.number3
+                    
+                    document.getElementById('output1').value = number1;
+                    document.getElementById('output2').value = number2;
+                    document.getElementById('output3').value = number3;
                 })
                 .catch(error => console.error('Error:',error))
         }
+        // if(document.getElementById("selection").value == 1) {
+        // }
     };
 
 
