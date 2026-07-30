@@ -2,10 +2,11 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jschway.luckynumgen</groupId>
-    <artifactId>luckynumgen-single1x</artifactId>
+    <artifactId>luckynumgen-single2x</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <name>luckynumgen-single1x</name>
+    <name>luckynumgen-single2x</name>
+    <description>luckynumgen-single2x</description>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
