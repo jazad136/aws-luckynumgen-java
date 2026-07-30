@@ -19,8 +19,7 @@ public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEv
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
         Map<String, List<String>> multiValueHeaders = Map.of(
-//            "Access-Control-Allow-Origin",List.of("*")
-            "Access-Control-Allow-Origin",List.of("https://jschway.com","https://mybucket-jschway813.s3.us-east-1.amazonaws.com")
+            "Access-Control-Allow-Origin",List.of("*")
         );
         String lastX = "";
         if(input.getPathParameters() != null)
