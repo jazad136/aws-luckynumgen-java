@@ -12,3 +12,6 @@ NOTES:
 
 testOneNumber() is an automated test that clicks one number and clicks the "Generate" button to generate a single set of lucky numbers. 
 - later the goal will be to automate a test that clicks several numbers and generates several sets of numbers.
+
+The look of this application July 25, before the challenge:
+![Lucky Number Generator from July 25](https://github.com/jazad136/aws-luckynumgen-java/raw/main/images/1_2026_July25_LuckyNumGenerator_One.jpg)
