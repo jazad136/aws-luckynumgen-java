@@ -32,11 +32,12 @@ public class HandleTest {
     public void setUp() { 
         setupLogger();
         driver = new ChromeDriver();
+        gen = new Random();
         colLimit = rowLimit = 10;
         coverage = new boolean[rowLimit][colLimit];
         wait = TestHelpMethods.setupWait(driver);
         driver.get("file:///Users/jsaddle/SrcCode/tryout/java/samjava-example5/LuckynumgenIntegration3/webapp/LuckynumgenWebapp/local-test/index.html");
-        gen = new Random();
+        
     }
     
     @AfterMethod(alwaysRun=true)

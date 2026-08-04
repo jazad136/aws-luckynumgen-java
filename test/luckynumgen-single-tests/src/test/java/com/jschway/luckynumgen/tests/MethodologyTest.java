@@ -15,12 +15,12 @@ public class MethodologyTest {
     boolean[][] coverage;
     private int rowLimit;
     private int colLimit;
+    
     @BeforeMethod(alwaysRun=true)
     public void setUp() { 
         gen = new Random();
-        rowLimit = 10;
+        colLimit = rowLimit = 10;
         coverage = new boolean[rowLimit][colLimit];
-        colLimit = 10;
     }
     
     @Test
@@ -31,7 +31,7 @@ public class MethodologyTest {
         List<String> outTexts = handle.generateThree(""+select);
         selections.addAll(outTexts);
         
-        try{Thread.sleep(1000);} catch(InterruptedException e) {throw e;}
+//        try{Thread.sleep(1000);} catch(InterruptedException e) {throw e;}
         int genNum = 1;
         for(String outText : selections) {
             String result = mark(outText, coverage, rowLimit, colLimit);
