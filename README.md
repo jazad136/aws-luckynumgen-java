@@ -7,7 +7,7 @@ by Jonathan Saddler
 CHANGELOG 
 
 - 08/03 : upload testOneNumber()
-
+- 08/04 : Fix tests. Ensure initialization is done for both the same way
 NOTES: 
 
 testOneNumber() is an automated test that clicks one number and clicks the "Generate" button to generate a single set of lucky numbers. 
