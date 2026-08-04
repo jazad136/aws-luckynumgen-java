@@ -1,4 +1,4 @@
-package com.jschway.luckynumgen;
+package com.jschway.luckynumgen.tests;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +32,10 @@ public class TestHelpMethods {
         int col = toMark % 10;
         coverage[row][col] = true;
     }
-    public static void mark(String input, boolean[][] coverage) { 
+    public  static void mark(int row, int col, boolean[][] coverage) {
+        coverage[row][col] = true;
+    }
+    public static void mark(String input, boolean[][] coverage) {
         int toMark = Integer.parseInt(input);
         int row = toMark / 10;
         int col = toMark % 10;

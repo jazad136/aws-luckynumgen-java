@@ -1,3 +1,8 @@
+event1.json
+event2.json
+event3.json
+output1.json
+output1_2.json
 .aws-sam/
 #SADDLER
 .DS_Store
@@ -27,3 +32,5 @@ nextsteps.txt
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+/test/luckynumgen-double-tests/target/
+/function/LuckynumgenSingle1x/target/
