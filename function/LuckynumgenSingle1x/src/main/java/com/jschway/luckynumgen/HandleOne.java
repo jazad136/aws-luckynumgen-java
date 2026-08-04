@@ -60,7 +60,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 .withBody(output);
     }
     
-    public String newLuckyNumber(String numberIn) { 
+    public static String newLuckyNumber(String numberIn) { 
         Random r = new Random();
         int randomPart = r.nextInt(0,9)+1;
         int position = r.nextInt(2);
@@ -73,7 +73,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         return stringOut;
     }
     
-    public String newLuckyNumber(String numberIn, List<String> previous) { 
+    public static String newLuckyNumber(String numberIn, List<String> previous) { 
         String stringOut = "";
         do { 
             stringOut = newLuckyNumber(numberIn);
