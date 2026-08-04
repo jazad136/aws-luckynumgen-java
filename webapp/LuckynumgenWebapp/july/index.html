@@ -54,21 +54,16 @@ input, select, button, #resultBox {
     </div>
     <div>
         <input type="button" id="sel1" value="1" onclick="setSelected(1)"/>
-        <!-- <input type="button" id="sel2" value="2" onclick="alert('You clicked 2')"/> -->
         <input type="button" id="sel2" value="2" onclick="setSelected(2)"/>
         <input type="button" id="sel3" value="3" onclick="setSelected(3)"/>
         <input type="button" id="sel4" value="4" onclick="setSelected(4)"/>
-        <!-- <button id="sel4" value="4">4</button> -->
-        <!-- <button id="sel5" value="5">5</button> -->
         <div>
             <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
-        <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
-        <!-- <button id="sel6" value="6">6</button> -->
-        <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
-        <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
-        <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
-
-    </div>
+            <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
+            <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
+            <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
+            <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
+        </div>
 </form>
 <script>
     function setSelected(number) { 
@@ -98,11 +93,11 @@ input, select, button, #resultBox {
     }
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
-        // var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
         var apiUrl = '';
         const selVal = document.getElementById("selection").value
         if(selVal && selVal !== '') {
-            const dplmtStem =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/;                 
+            // const dplmtStem =  'http://127.0.0.1:3000/';                 
+            const dplmtStem =  '${DEPLOYMENT_STRING_CHANGE_THIS_FOR_UPLOAD}';                 
             const app = chooseApp(selVal)
             apiUrl = `${dplmtStem}/${app}/${selVal}`
             fetch(apiUrl)

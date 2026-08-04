@@ -98,11 +98,10 @@ input, select, button, #resultBox {
     }
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
-        // var apiUrl =  'https://fkwbb9od4b.execute-api.us-east-1.amazonaws.com/Prod/onex';
         var apiUrl = '';
         const selVal = document.getElementById("selection").value
         if(selVal && selVal !== '') {
-            const dplmtStem =  'http://127.0.0.1:3000/';                 
+            const dplmtStem =  'http://127.0.0.1:3000';                 
             const app = chooseApp(selVal)
             apiUrl = `${dplmtStem}/${app}/${selVal}`
             fetch(apiUrl)
