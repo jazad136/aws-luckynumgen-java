@@ -9,6 +9,7 @@ CHANGELOG
 - 08/03 : upload testOneNumber()
 - 08/04 : Fix tests. Ensure initialization is done for both the same way
 - 08/05 : Prepare for addl feature: 3-digit lucky numbers
+- 08/06 : Nothing to report.
 NOTES: 
 
 testOneNumber() is an automated test that clicks one number and clicks the "Generate" button to generate a single set of lucky numbers. 
