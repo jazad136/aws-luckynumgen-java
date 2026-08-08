@@ -2,10 +2,10 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jschway.luckynumgen</groupId>
-    <artifactId>luckynumgen-double-1x</artifactId>
+    <artifactId>luckynumgen-double1x</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <name>luckynumgen-double-1x</name>
+    <name>luckynumgen-double1x</name>
     <description>LuckyNumGen Handler for Double Digit Generation - Odd Numbers</description>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
