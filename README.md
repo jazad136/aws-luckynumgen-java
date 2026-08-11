@@ -10,9 +10,11 @@ CHANGELOG
 - 08/04 : Fix tests. Ensure initialization is done for both the same way
 - 08/05 : Prepare for addl feature: 3-digit lucky numbers
 - 08/06 : Nothing to report.
-- 08/07 : Nothing to report.
-- 08/08 : Nothing to report.
+- 08/07-08/08 Nothing to report.
 - 08/09 : "Remainder File String" method in function Single3x creates a JSON file: help keep track of previously generated numbers.
+- 08/10 : "Affected digits" checks to see which s3 directories need updated
+- 08/10 : Add clean_s3_directories for daily storage reset, 
+- & test bulk upload to cloud storage
 
 NOTES: 
 
