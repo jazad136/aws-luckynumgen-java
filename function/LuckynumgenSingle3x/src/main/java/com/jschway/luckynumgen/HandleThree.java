@@ -4,6 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import java.util.ArrayList;
@@ -16,9 +18,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -75,29 +77,31 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
 //                String newNumber = newLuckyNumber(numberIn, previous);
 //                newNumbers.add(newNumber); previous.add(newNumber);
 //            }
-            
-            
             S3AsyncClient s3AsyncClient = S3AsyncClient.builder().build();
             Collection<String> affectedDigits = affectedDigits(newNumbers);
-            final LuckyNumberMessage simpleMessage = new LuckyNumberMessage();
-            List<CompletableFuture> s3Writes = new LinkedList<>();
-            for(String digit : affectedDigits) {
+            final List<LuckyNumberMessage> simpleMessages = new LinkedList<>();
+            var s3Writes = affectedDigits.stream().map(digit -> { 
                 AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
                 String key = String.format("single/0%s.json", digit);
-                var putResponse = s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
-                    .exceptionally(e -> {
-                        if (e != null)
-                            simpleMessage.setMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage());
-                        return null;
-                    });
-                if(simpleMessage.getMessage() != null) {
-                    output = String.format("{ \"message\": \"Exception caught during S3 operation: %s\" }", simpleMessage.getMessage());
-                    return response
-                            .withStatusCode(502)
-                            .withBody(output);
+                return s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body);
+            }).collect(Collectors.toList()).toArray(new CompletableFuture[0]);
+
+            CompletableFuture<Void> responses = CompletableFuture.allOf(s3Writes)
+                .exceptionally(e -> {
+                    if (e != null)
+                        simpleMessages.add(new LuckyNumberMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage()));
+                    return null;
                 }
+            );
+            if(!simpleMessages.isEmpty()) {
+                LuckyNumberMessages messages = getMessagesCollection(simpleMessages);
+                ObjectMapper mapper = new ObjectMapper();
+                output = mapper.writeValueAsString(messages);
             }
-            
+//            for(String digit : affectedDigits) {
+//                AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
+//                String key = String.format("single/0%s.json", digit);
+//                s3Writes.add(s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body));
             
 //            final String uploadKey = "1";
 //            CompletableFuture<PutObjectResponse> responseFuture =
@@ -116,6 +120,19 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                 .withBody(output);
     }
     
+//    public CompletableFuture<PutObjectResponse> addToS3Bucket(S3AsyncClient client, String bucketName) { 
+//        return client.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
+//            .exceptionally(e -> {
+//                if (e != null)
+//                    simpleMessage.setMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage());
+//                return null;
+//            });
+//    }
+    public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
+        return new LuckyNumberMessages(simpleMessages.stream()
+            .map(LuckyNumberMessage::getMessage)
+            .collect(Collectors.toList()));
+    }
     private Collection<String> affectedDigits(Collection<String> newNumbers) { 
         Set<String> affected = new TreeSet<>();
         for(String numStr : newNumbers) 
@@ -189,6 +206,19 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         public void setEnds(List<String> ends) { this.ends = ends; }
     }
     
+    public static class LuckyNumberMessages { 
+        private HashMap<String, String> messages;
+        public LuckyNumberMessages(List<String> messages) { 
+            this.messages = new HashMap<>();
+            for(int i = 1; i <= messages.size(); i++)  
+                this.messages.put(""+i, messages.get(i));
+        }
+
+        @JsonAnyGetter
+        public HashMap<String, String> getMessageMap() { return messages; } 
+        @JsonAnySetter
+        public void addMessage(String key, Object value) { messages.put(key, (String)value); } 
+    }
     public static class LuckyNumberMessage { 
         private String message;
         public LuckyNumberMessage(String message) { this.message = message; } 
