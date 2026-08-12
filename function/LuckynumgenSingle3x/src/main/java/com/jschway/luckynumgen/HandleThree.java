@@ -4,8 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import java.util.ArrayList;
@@ -141,20 +139,20 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         
         return affected;
     }
+    
     public String remainderFileString(String numberIn, List<String> previous) { 
         final LinkedList<String> starts = new LinkedList<>();
         final LinkedList<String> ends = new LinkedList<>();
         for(int j = 1; j <= 9; j++) 
             if(previous.contains(numberIn+j)) 
                 starts.add(numberIn+j);
-        for (int k = 9; k >= 1; k--)
+        for (int k = 1; k <= 9; k++)
             if(previous.contains(k + numberIn))
                 ends.add(k+numberIn);
         ListBundleMessage generated = new ListBundleMessage(starts, ends);
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(generated);
     }
-    
     
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
@@ -172,60 +170,5 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         // select a number
         Random r = new Random();
         return lis.get((int)r.nextInt(lis.size()));
-    }
-    public static class ListBundleMessage { 
-        public ListBundle generated;
-        
-        public ListBundleMessage() { } 
-        public ListBundleMessage(List<String> starts, List<String> ends) {
-            generated = new ListBundle(starts, ends);
-        }
-        @JsonGetter("generated")
-        public ListBundle getGenerated() { return generated; } 
-        @JsonSetter("generated")
-        public void setGenerated(ListBundle value) { this.generated = value; } 
-    }
-    public static class ListBundle { 
-        public List<String> starts;
-        public List<String> ends;
-        
-        public ListBundle() { } 
-        public ListBundle(List<String> starts, List<String> ends) {
-            this.starts = starts; 
-            this.ends = ends;
-        }
-        @JsonGetter("starts")
-        public List<String> getStarts() { return starts; }
-        
-        @JsonSetter("starts")
-        public void setStarts(List<String> starts) { this.starts = starts; }
-
-        @JsonGetter("ends")
-        public List<String> getEnds() { return ends; }
-        @JsonSetter("ends")
-        public void setEnds(List<String> ends) { this.ends = ends; }
-    }
-    
-    public static class LuckyNumberMessages { 
-        private HashMap<String, String> messages;
-        public LuckyNumberMessages(List<String> messages) { 
-            this.messages = new HashMap<>();
-            for(int i = 1; i <= messages.size(); i++)  
-                this.messages.put(""+i, messages.get(i));
-        }
-
-        @JsonAnyGetter
-        public HashMap<String, String> getMessageMap() { return messages; } 
-        @JsonAnySetter
-        public void addMessage(String key, Object value) { messages.put(key, (String)value); } 
-    }
-    public static class LuckyNumberMessage { 
-        private String message;
-        public LuckyNumberMessage(String message) { this.message = message; } 
-        public LuckyNumberMessage() { }
-        @JsonGetter("message")
-        public String getMessage() { return message; }
-        @JsonSetter("message")
-        public void setMessage(String message) { this.message = message; }
     }
 }
