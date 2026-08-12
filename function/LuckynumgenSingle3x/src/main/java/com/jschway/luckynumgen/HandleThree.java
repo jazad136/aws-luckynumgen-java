@@ -16,9 +16,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -75,29 +75,31 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
 //                String newNumber = newLuckyNumber(numberIn, previous);
 //                newNumbers.add(newNumber); previous.add(newNumber);
 //            }
-            
-            
             S3AsyncClient s3AsyncClient = S3AsyncClient.builder().build();
             Collection<String> affectedDigits = affectedDigits(newNumbers);
-            final LuckyNumberMessage simpleMessage = new LuckyNumberMessage();
-            List<CompletableFuture> s3Writes = new LinkedList<>();
-            for(String digit : affectedDigits) {
+            final List<LuckyNumberMessage> simpleMessages = new LinkedList<>();
+            var s3Writes = affectedDigits.stream().map(digit -> { 
                 AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
                 String key = String.format("single/0%s.json", digit);
-                var putResponse = s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
-                    .exceptionally(e -> {
-                        if (e != null)
-                            simpleMessage.setMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage());
-                        return null;
-                    });
-                if(simpleMessage.getMessage() != null) {
-                    output = String.format("{ \"message\": \"Exception caught during S3 operation: %s\" }", simpleMessage.getMessage());
-                    return response
-                            .withStatusCode(502)
-                            .withBody(output);
+                return s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body);
+            }).collect(Collectors.toList()).toArray(new CompletableFuture[0]);
+
+            CompletableFuture<Void> responses = CompletableFuture.allOf(s3Writes)
+                .exceptionally(e -> {
+                    if (e != null)
+                        simpleMessages.add(new LuckyNumberMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage()));
+                    return null;
                 }
+            );
+            if(!simpleMessages.isEmpty()) {
+                LuckyNumberMessages messages = getMessagesCollection(simpleMessages);
+                ObjectMapper mapper = new ObjectMapper();
+                output = mapper.writeValueAsString(messages);
             }
-            
+//            for(String digit : affectedDigits) {
+//                AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
+//                String key = String.format("single/0%s.json", digit);
+//                s3Writes.add(s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body));
             
 //            final String uploadKey = "1";
 //            CompletableFuture<PutObjectResponse> responseFuture =
@@ -116,6 +118,19 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                 .withBody(output);
     }
     
+//    public CompletableFuture<PutObjectResponse> addToS3Bucket(S3AsyncClient client, String bucketName) { 
+//        return client.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
+//            .exceptionally(e -> {
+//                if (e != null)
+//                    simpleMessage.setMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage());
+//                return null;
+//            });
+//    }
+    public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
+        return new LuckyNumberMessages(simpleMessages.stream()
+            .map(LuckyNumberMessage::getMessage)
+            .collect(Collectors.toList()));
+    }
     private Collection<String> affectedDigits(Collection<String> newNumbers) { 
         Set<String> affected = new TreeSet<>();
         for(String numStr : newNumbers) 
@@ -124,20 +139,20 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         
         return affected;
     }
+    
     public String remainderFileString(String numberIn, List<String> previous) { 
         final LinkedList<String> starts = new LinkedList<>();
         final LinkedList<String> ends = new LinkedList<>();
         for(int j = 1; j <= 9; j++) 
             if(previous.contains(numberIn+j)) 
                 starts.add(numberIn+j);
-        for (int k = 9; k >= 1; k--)
+        for (int k = 1; k <= 9; k++)
             if(previous.contains(k + numberIn))
                 ends.add(k+numberIn);
         ListBundleMessage generated = new ListBundleMessage(starts, ends);
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(generated);
     }
-    
     
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
@@ -155,47 +170,5 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         // select a number
         Random r = new Random();
         return lis.get((int)r.nextInt(lis.size()));
-    }
-    public static class ListBundleMessage { 
-        public ListBundle generated;
-        
-        public ListBundleMessage() { } 
-        public ListBundleMessage(List<String> starts, List<String> ends) {
-            generated = new ListBundle(starts, ends);
-        }
-        @JsonGetter("generated")
-        public ListBundle getGenerated() { return generated; } 
-        @JsonSetter("generated")
-        public void setGenerated(ListBundle value) { this.generated = value; } 
-    }
-    public static class ListBundle { 
-        public List<String> starts;
-        public List<String> ends;
-        
-        public ListBundle() { } 
-        public ListBundle(List<String> starts, List<String> ends) {
-            this.starts = starts; 
-            this.ends = ends;
-        }
-        @JsonGetter("starts")
-        public List<String> getStarts() { return starts; }
-        
-        @JsonSetter("starts")
-        public void setStarts(List<String> starts) { this.starts = starts; }
-
-        @JsonGetter("ends")
-        public List<String> getEnds() { return ends; }
-        @JsonSetter("ends")
-        public void setEnds(List<String> ends) { this.ends = ends; }
-    }
-    
-    public static class LuckyNumberMessage { 
-        private String message;
-        public LuckyNumberMessage(String message) { this.message = message; } 
-        public LuckyNumberMessage() { }
-        @JsonGetter("message")
-        public String getMessage() { return message; }
-        @JsonSetter("message")
-        public void setMessage(String message) { this.message = message; }
     }
 }
