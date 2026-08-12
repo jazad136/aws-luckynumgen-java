@@ -15,29 +15,28 @@ Resources:
   LuckynumgenSingle1x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      Environment:
-        Variables:
-          BUCKET_NAME: "mybucket-jschway939"
-          
       CodeUri: function/LuckynumgenSingle1x
       Handler: com.jschway.luckynumgen.HandleOne::handleRequest
       Runtime: java21
       MemorySize: 128
       Architectures:
         - x86_64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+          - Action:
+            - s3:PutObject
+            Effect: 'Allow'
+            Resource: !Sub ${LuckynumgenBucket.Arn}/*
       Events:
         LuckynumgenSingle1x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Method: any
             Path: /onex/{proxy+}
-        LuckynumgenBucket:
-          Type: S3
-          Properties:
-            Bucket:
-              Ref: SourceImageBucket
-            Events:
-              - 's3:ObjectCreated:*'
+      Environment:
+        Variables:
+          BUCKETNAME: !Ref LuckynumgenBucket
   LuckynumgenSingle2x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -47,27 +46,50 @@ Resources:
       MemorySize: 128
       Architectures:
         - x86_64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+          - Action:
+            - s3:PutObject
+            Effect: 'Allow'
+            Resource: !Sub ${LuckynumgenBucket.Arn}/*
       Events:
-        LuckynumgenSingle1x:
+        LuckynumgenSingle2x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Method: any
             Path: /twox/{proxy+}
+      Environment:
+        Variables:
+          BUCKETNAME: !Ref LuckynumgenBucket
   LuckynumgenSingle3x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
+      Environment:
+        Variables:
+          BUCKETNAME: "mybucket-jschway939"
       CodeUri: function/LuckynumgenSingle3x
       Handler: com.jschway.luckynumgen.HandleThree::handleRequest
       Runtime: java21
       MemorySize: 128
       Architectures:
         - x86_64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+          - Action:
+            - s3:PutObject
+            Effect: 'Allow'
+            Resource: !Sub ${LuckynumgenBucket.Arn}/*
       Events:
-        LuckynumgenSingle1x:
+        LuckynumgenSingle3x:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Method: any
             Path: /threex/{proxy+}
+      Environment:
+        Variables:
+          BUCKETNAME: !Ref LuckynumgenBucket
   LuckynumgenBucket:
     Type: 'AWS::S3::Bucket'
 Outputs:
@@ -86,6 +108,9 @@ Outputs:
   LuckynumgenSingle1x:
     Description: "Lucky Num Gen OneX Lambda Java ARN"
     Value: !GetAtt LuckynumgenSingle1x.Arn
+  LuckynumgenBucket:
+    Description: "Lucky Num Gen Bucket ARN"
+    Value: !GetAtt LuckynumgenBucket.Arn
   LuckynumgenSingle1xIamRole:
     Description: "Implicit IAM Role created for Lucky Num Gen Lambda Java"
     Value: !GetAtt LuckynumgenSingle1x.Arn

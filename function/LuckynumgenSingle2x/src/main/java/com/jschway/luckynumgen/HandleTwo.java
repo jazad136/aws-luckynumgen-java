@@ -28,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> { 
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
@@ -71,7 +72,6 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
-            String BUCKET_NAME = "mybucket-jschway939";
             
             // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/best-practices-s3-uploads.html
             for(String digit : affectedDigits(newNumbers)) { 
@@ -79,7 +79,7 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
                     .region(Region.US_EAST_1)
                     .build();
                 String bucketKey = "0" + digit;
-                String result = uploadToS3(s3Client, BUCKET_NAME, bucketKey, remainderFileString(bucketKey, previous));
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(bucketKey, previous));
                 if(!result.isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     output = mapper.writeValueAsString(new LuckyNumberMessages(result));

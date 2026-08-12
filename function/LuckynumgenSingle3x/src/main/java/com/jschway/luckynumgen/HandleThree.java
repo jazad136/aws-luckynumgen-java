@@ -26,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
@@ -81,7 +82,7 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             var s3Writes = affectedDigits.stream().map(digit -> { 
                 AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
                 String key = String.format("single/0%s.json", digit);
-                return s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body);
+                return s3AsyncClient.putObject(r -> r.bucket(BUCKETNAME).key(key), s3Body);
             }).collect(Collectors.toList()).toArray(new CompletableFuture[0]);
 
             CompletableFuture<Void> responses = CompletableFuture.allOf(s3Writes)
