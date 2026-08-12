@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="Rest Test Suite">
+
+
+    <test name="Rest Test Suite">
+        <classes>
+            <class name="com.jschway.luckynumgen.tests.rest.PositiveNumberTest1x">
+                <methods>
+                    <include name="testGenContainsNumber"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>
