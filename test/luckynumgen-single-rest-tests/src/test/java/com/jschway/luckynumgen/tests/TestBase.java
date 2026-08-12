@@ -25,8 +25,8 @@ public abstract class TestBase {
     @BeforeClass 
     public void init() { 
         RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 7000;
-        RestAssured.basePath = "/onex";
+        RestAssured.port = 3000;
+//        RestAssured.config = RestAssuredConfig.config().objectMapperConfig(objectMapperConfig().defaultObjectMapperType(ObjectMapperType.GSON))
     }
     @BeforeMethod
     @Parameters({"testNamePrepend"})

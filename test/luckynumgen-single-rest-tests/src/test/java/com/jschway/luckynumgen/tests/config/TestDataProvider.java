@@ -4,21 +4,25 @@
  */
 package com.jschway.luckynumgen.tests.config;
 
-import com.jayway.jsonpath.JsonPath;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.testng.annotations.DataProvider;
 
 /**
  *
  * @author jsaddle
  */
 public class TestDataProvider {
-    public static Object[][] methodDataProviderLogicSuite(Method method) {
+    @DataProvider
+    public static Object[][] methodDataProviderPositiveSuite(Method method) {
         // separate data for each test
         System.out.println("Test method name: " + method.getName()); 
         Object data[][] = null;
+        if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
+            data = new Object[2][3];
+            data[0][0] = "1";
+            data[0][1] = "1";
+            data[0][2] = "Positive Numbers: Input 1";
+        }
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBER")) { 
             data = new Object[9][3];
             data[0][0] = "1";

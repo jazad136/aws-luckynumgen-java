@@ -24,27 +24,46 @@ public class PositiveNumberTest1x extends TestBase{
     }
     
     @Test(dataProviderClass = TestDataProvider.class, 
-          dataProvider = "methodDataProviderLogicSuite")
-    public void testGenContainsNumber(String numberIn, String numberContains, String testName) {
+          dataProvider = "methodDataProviderPositiveSuite")
+    public void testGenContainsNumberSimple(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
         var response = given()
          .pathParam("numberIn", numberIn)
          .when()
-         .get("/onex/{numberIn}")
+         .get("/{numberIn}")
          .then()
          .statusCode(200);
         i("Testing number1 contains " + numberContains);
         response
          .and()
-         .body("number1", (resp) -> contains(numberContains));
+         .body("number1", contains(numberContains));
         i("Testing number2 contains " + numberContains);
         response
          .and()
-         .body("number2", (resp) -> contains(numberContains));
+         .body("number2", contains(numberContains));
         i("Testing number3 contains " + numberContains);
         response
+         .body("number3", contains(numberContains));
+    }
+    public void testGenContainsNumber(String numberIn, String numberContains, String testName) {
+        i("Testing response is 200");
+        var response = given()
+         .pathParam("numberIn", numberIn)
+         .when()
+         .get("/{numberIn}")
+         .then()
+         .statusCode(200);
+        i("Testing number1 contains " + numberContains);
+        response
          .and()
-         .body("number3", (resp) -> contains(numberContains));
+         .body("number1", contains(numberContains));
+        i("Testing number2 contains " + numberContains);
+        response
+         .and()
+         .body("number2", contains(numberContains));
+        i("Testing number3 contains " + numberContains);
+        response
+         .body("number3", contains(numberContains));
     }
 
 //    @DisplayName("Get the total value from the response")
