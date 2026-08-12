@@ -15,6 +15,10 @@ Resources:
   LuckynumgenSingle1x:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
+      Environment:
+        Variables:
+          BUCKET_NAME: "mybucket-jschway939"
+          
       CodeUri: function/LuckynumgenSingle1x
       Handler: com.jschway.luckynumgen.HandleOne::handleRequest
       Runtime: java21
