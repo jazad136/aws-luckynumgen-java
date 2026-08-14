@@ -13,12 +13,36 @@ import org.testng.annotations.DataProvider;
  */
 public class TestDataProvider {
     @DataProvider
-    public static Object[][] methodDataProviderPositiveSuite(Method method) {
+    public static Object[][] methodDataProviderPositive2xSuite(Method method) {
+        // separate data for each test
+        System.out.println("Test method name: " + method.getName()); 
+        Object data[][] = null;
+        if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBER")) { 
+            data = new Object[3][3];
+            data[0][0] = "4";
+            data[0][1] = "4";
+            data[0][2] = "Positive Numbers 2x: Input 4";
+            data[1][0] = "5";
+            data[1][1] = "5";
+            data[1][2] = "Positive Numbers 2x: Input 5";
+            data[2][0] = "6";
+            data[2][1] = "6";
+            data[2][2] = "Positive Numbers 2x: Input 6";
+        }
+        if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
+            data = new Object[1][3];
+            data[0][0] = "4";
+            data[0][1] = "4";
+            data[0][2] = "Positive Numbers 2x: Input 4";
+        }
+        return data;
+    }
+    public static Object[][] methodDataProviderPositive1xSuite(Method method) {
         // separate data for each test
         System.out.println("Test method name: " + method.getName()); 
         Object data[][] = null;
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
-            data = new Object[2][3];
+            data = new Object[1][3];
             data[0][0] = "1";
             data[0][1] = "1";
             data[0][2] = "Positive Numbers: Input 1";

@@ -9,6 +9,7 @@ import com.jschway.luckynumgen.tests.config.TestDataProvider;
 import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import org.testng.ITestResult;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -24,7 +25,7 @@ public class PositiveNumberTest1x extends TestBase{
     }
     
     @Test(dataProviderClass = TestDataProvider.class, 
-          dataProvider = "methodDataProviderPositiveSuite")
+          dataProvider = "methodDataProviderPositive1xSuite")
     public void testGenContainsNumberSimple(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
         var response = given()
@@ -36,14 +37,14 @@ public class PositiveNumberTest1x extends TestBase{
         i("Testing number1 contains " + numberContains);
         response
          .and()
-         .body("number1", contains(numberContains));
+         .body("number1", containsString(numberContains));
         i("Testing number2 contains " + numberContains);
         response
          .and()
-         .body("number2", contains(numberContains));
+         .body("number2", containsString(numberContains));
         i("Testing number3 contains " + numberContains);
         response
-         .body("number3", contains(numberContains));
+         .body("number3", containsString(numberContains));
     }
     public void testGenContainsNumber(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
