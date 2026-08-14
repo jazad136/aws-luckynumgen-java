@@ -16,6 +16,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -25,7 +26,9 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+    
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
@@ -81,7 +84,7 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             var s3Writes = affectedDigits.stream().map(digit -> { 
                 AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
                 String key = String.format("single/0%s.json", digit);
-                return s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body);
+                return s3AsyncClient.putObject(r -> r.bucket("s3://" + BUCKETNAME).key(key), s3Body);
             }).collect(Collectors.toList()).toArray(new CompletableFuture[0]);
 
             CompletableFuture<Void> responses = CompletableFuture.allOf(s3Writes)
@@ -91,6 +94,11 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                     return null;
                 }
             );
+//            try { 
+            responses.join();
+//            } catch(ExecutionException e) { 
+//                
+//            }
             if(!simpleMessages.isEmpty()) {
                 LuckyNumberMessages messages = getMessagesCollection(simpleMessages);
                 ObjectMapper mapper = new ObjectMapper();
@@ -111,7 +119,7 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
             String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
             output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
-        }              
+        }
         
         return response
                 .withStatusCode(200)

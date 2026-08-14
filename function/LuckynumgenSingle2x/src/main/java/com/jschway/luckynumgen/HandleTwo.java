@@ -4,22 +4,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.ObjectMapper;
 
@@ -27,7 +27,10 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> { 
+    private static LambdaLogger log;
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        log = context.getLogger();
+        String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");
@@ -71,15 +74,17 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
-            String BUCKET_NAME = "mybucket-jschway939";
             
             // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/best-practices-s3-uploads.html
+            // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/examples-s3.html
             for(String digit : affectedDigits(newNumbers)) { 
                 S3Client s3Client = S3Client.builder()
                     .region(Region.US_EAST_1)
+                    .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+                    .forcePathStyle(true)
                     .build();
-                String bucketKey = "0" + digit;
-                String result = uploadToS3(s3Client, BUCKET_NAME, bucketKey, remainderFileString(bucketKey, previous));
+                String bucketKey = "single/0" + digit + ".json";
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
                 if(!result.isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     output = mapper.writeValueAsString(new LuckyNumberMessages(result));
@@ -100,10 +105,24 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 .withStatusCode(200)
                 .withBody(output);
     }
-    public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
+    public static String uploadToS3(S3Client s3Client, String name, String bucketKey, String content) {
         try {
+//            Directory buckets - When you use this operation with a directory bucket, 
+//            you must use virtual-hosted-style requests in the format 
+//            Bucket-name.s3express-zone-id.region-code.amazonaws.com. 
+//            Path-style requests are not supported. 
+//            Directory bucket names must be unique in the 
+//            chosen Zone (Availability Zone or Local Zone). 
+//            Bucket names must follow the format bucket-base-name--zone-id--x-s3 
+//            (for example, amzn-s3-demo-bucket--usw2-az1--x-s3). 
+//            For information about bucket naming restrictions, 
+//            see Directory bucket naming rules in the Amazon S3 User Guide.
+            
             RequestBody body = RequestBody.fromString(content);
-            s3Client.putObject(b -> b.bucket(System.getenv("BUCKET_NAME")).key(bucketKey), body);
+//            String bucketName = String.format(String.format("%s--use1--x-s3",name));
+            String bucketName = String.format(String.format("%s",name));
+            // amzn-s3-demo-bucket--usw2-az1--x-s3
+            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
             return "";
         } catch(S3Exception | SdkClientException e) {
             return e.getMessage();
@@ -129,9 +148,11 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
         for(int j = 1; j <= 9; j++) 
             if(previous.contains(numberIn+j)) 
                 starts.add(numberIn+j);
-        for (int k = 1; k <= 9; k++)
-            if(previous.contains(k + numberIn))
-                ends.add(k+numberIn);
+        for (int k = 1; k <= 9; k++) {
+            if(!(""+k).equals(numberIn)) // don't insert repeats in second list
+                if(previous.contains(k + numberIn))
+                    ends.add(k+numberIn);
+        }
         ListBundleMessage generated = new ListBundleMessage(starts, ends);
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(generated);
