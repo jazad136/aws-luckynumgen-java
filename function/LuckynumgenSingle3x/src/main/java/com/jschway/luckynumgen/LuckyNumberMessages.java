@@ -7,12 +7,18 @@ import java.util.List;
 
 public class LuckyNumberMessages { 
     private HashMap<String, String> messages;
+    public LuckyNumberMessages(String... messages) { 
+        this.messages = new HashMap<>();
+        for(int i = 0; i < messages.length; i++)  
+            this.messages.put(""+i, messages[i]);
+    }
     public LuckyNumberMessages(List<String> messages) { 
         this.messages = new HashMap<>();
-        for(int i = 1; i <= messages.size(); i++)  
-            this.messages.put(""+i, messages.get(i));
+        for(int i = 0; i < messages.size(); i++)  
+            this.messages.put(""+(i+1), messages.get(i));
     }
 
+    
     @JsonAnyGetter
     public HashMap<String, String> getMessageMap() { return messages; } 
     @JsonAnySetter

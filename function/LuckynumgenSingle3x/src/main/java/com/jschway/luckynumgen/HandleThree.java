@@ -5,7 +5,9 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,9 +22,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -53,6 +61,13 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                 default -> "";
             };
         }
+        S3Client s3Client = S3Client.builder()
+            .region(Region.US_EAST_1)
+            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+            .forcePathStyle(true)
+            .build();
+        
+        
         String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
@@ -61,9 +76,15 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             output = String.format("{ \"message\": \"Value %s is out of range\" }", lastX);
         }
         else {
-            List<String> previous = new LinkedList<>(); 
-            List<String> newNumbers = new LinkedList<>();
+            String readKey = String.format("single/0%s.json", numberIn);
+            String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
+            ObjectMapper mapper = new ObjectMapper();
+            ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
+
+            List<String> previous = gatherPrevious(startsEnds);
             
+            List<String> newNumbers = new LinkedList<>();
+            // improvement: have a single method update both lists. 
             String newNumber = newLuckyNumber(numberIn, previous);
             if(!newNumber.isEmpty()) {
                 newNumbers.add(newNumber); previous.add(newNumber);
@@ -76,98 +97,66 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
-            log.log(String.format("Added Numbers %s\n", newNumbers));
-//            List<String> previous = new LinkedList<>(); 
-//            List<String> newNumbers = new LinkedList<>();
-//            for(int i = 0; i < 3; i++) {
-//                String newNumber = newLuckyNumber(numberIn, previous);
-//                newNumbers.add(newNumber); previous.add(newNumber);
-//            }
-            
-            S3AsyncClient s3AClient = S3AsyncClient.builder()
-                    .region(Region.US_EAST_1)
-                    .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
-                    .forcePathStyle(true)
-                    .build();
-            ScheduledExecutorService ses = Executors.newScheduledThreadPool(10);
-            Collection<String> affectedDigits = affectedDigits(newNumbers);
-            final List<LuckyNumberMessage> simpleMessages = new LinkedList<>();
-            List<CompletableFuture<String>> s3Writes = affectedDigits.stream().map(digit -> {
-                String nextKey = String.format("single/0%s.json", digit);
-                return uploadToS3(s3AClient, BUCKETNAME, nextKey, remainderFileString(digit, previous));
-            }).collect(Collectors.toList());
-            CompletableFuture<?>[] futuresArray = s3Writes.toArray(new CompletableFuture<?>[0]);
-            CompletableFuture<List<String>> listWrites = CompletableFuture.allOf(futuresArray)
-                .thenApply(v -> s3Writes.stream().map(CompletableFuture::join).collect(Collectors.toList()));
-            final List<String> messages = listWrites.join();
-//            
-//            CompletableFuture<Void> responses = CompletableFuture.allOf(cfs)
-//                .exceptionally(e -> {
-//                    if (e != null)
-//                        simpleMessages.add(new LuckyNumberMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage()));
-//                    return null;
-//                }
-//            );
-//            try { 
-//            responses.join();
-//            } catch(ExecutionException e) { 
-//                
-//            }
-            List<String> issues = getIssues(messages);
-            if(!issues.isEmpty()) {
-                LuckyNumberMessages issueMessages = new LuckyNumberMessages(issues);
-                ObjectMapper mapper = new ObjectMapper();
-                output = mapper.writeValueAsString(messages);
+            // upload to S3
+            for(String digit : affectedDigits(newNumbers)) { 
+                String bucketKey = "single/0" + digit + ".json";
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
+                if(!result.isEmpty()) {
+                    output = mapper.writeValueAsString(new LuckyNumberMessages(result));
+                    return response
+                        .withStatusCode(502)
+                        .withBody(output);
+                }
             }
-//            for(String digit : affectedDigits) {
-//                AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
-//                String key = String.format("single/0%s.json", digit);
-//                s3Writes.add(s3AsyncClient.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body));
+            // improvement, use JSON Object
             
-//            final String uploadKey = "1";
-//            CompletableFuture<PutObjectResponse> responseFuture =
-//          https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/best-practices-s3-uploads.html
-//          ExecutorService executor = Executors.newSingleThreadExecutor();
-
             String messagePart = "\"message\": \"Lucky Number\"";
             String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
             String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
             String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
             output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
         }
-        
         return response
                 .withStatusCode(200)
                 .withBody(output);
     }
     
-    public static List<String> getIssues(final List<String> messages) { 
-        IntStream.range(0, messages.size()).boxed().map(idx -> {
-                if(messages.get(idx).isBlank()) {
-                    return String.format("%d : %s", idx, messages.get(idx));
-                };
-                return "";
-        }).filter(msg -> !msg.isEmpty()).collect(Collectors.toList());
-        return null;
-    }
-    public static CompletableFuture<String> uploadToS3(S3AsyncClient s3AsyncClient, String bucketName, String bucketKey, String content) {
-        AsyncRequestBody s3Body = AsyncRequestBody.fromString(content);
-        return s3AsyncClient.putObject(r -> r.bucket(bucketName).key(bucketKey), s3Body)
-            .handle((putResponse, throwable) -> { 
-                if(throwable != null) 
-                    return throwable.getMessage();
-                return "";
-        });
-    }
-//    public CompletableFuture<PutObjectResponse> addToS3Bucket(S3AsyncClient client, String bucketName) { 
-//        return client.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
-//            .exceptionally(e -> {
-//                if (e != null)
-//                    simpleMessage.setMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage());
-//                return null;
-//            });
-//    }
     
+    public String remainderFileString(String numberIn, List<String> previous) { 
+        final LinkedList<String> starts = new LinkedList<>();
+        final LinkedList<String> ends = new LinkedList<>();
+        for(int j = 1; j <= 9; j++) 
+            if(previous.contains(numberIn+j)) 
+                starts.add(numberIn+j);
+        for (int k = 1; k <= 9; k++) {
+            if(!(""+k).equals(numberIn)) // don't insert repeats in second list
+                if(previous.contains(k + numberIn))
+                    ends.add(k+numberIn);
+        }
+        ListBundleMessage generated = new ListBundleMessage(starts, ends);
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(generated);
+    }
+    public static String getFromS3(S3Client s3Client, String bucketName, String bucketKey)  {
+        try (ResponseInputStream<GetObjectResponse> body = s3Client.getObject(b -> b.bucket(bucketName).key(bucketKey));) { 
+            String toReturn = new String(body.readAllBytes(), StandardCharsets.UTF_8);
+            body.abort();
+            return toReturn;
+        } catch(IOException iex) { 
+            return iex.getMessage();
+        } catch(S3Exception | SdkClientException e) {
+            return e.getMessage();
+        }
+    }
+    public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
+        try {
+            RequestBody body = RequestBody.fromString(content);
+            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
+            return "";
+        } catch(S3Exception | SdkClientException e) {
+            return e.getMessage();
+        }
+    }
     public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
         return new LuckyNumberMessages(simpleMessages.stream()
             .map(LuckyNumberMessage::getMessage)
@@ -178,22 +167,7 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         for(String numStr : newNumbers) 
             for(char c : numStr.toCharArray())
                 affected.add(""+c);
-        
         return affected;
-    }
-    
-    public String remainderFileString(String numberIn, List<String> previous) { 
-        final LinkedList<String> starts = new LinkedList<>();
-        final LinkedList<String> ends = new LinkedList<>();
-        for(int j = 1; j <= 9; j++) 
-            if(previous.contains(numberIn+j)) 
-                starts.add(numberIn+j);
-        for (int k = 1; k <= 9; k++)
-            if(previous.contains(k + numberIn))
-                ends.add(k+numberIn);
-        ListBundleMessage generated = new ListBundleMessage(starts, ends);
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(generated);
     }
     
     public static String newLuckyNumber(String numberIn, List<String> previous) {
@@ -212,5 +186,12 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         // select a number
         Random r = new Random();
         return lis.get((int)r.nextInt(lis.size()));
+    }
+
+    private List<String> gatherPrevious(ListBundleMessage startsEnds) {
+        TreeSet<String> previous = new TreeSet<>();
+        previous.addAll(startsEnds.getGenerated().getStarts());
+        previous.addAll(startsEnds.getGenerated().getEnds());
+        return new LinkedList<>(previous);
     }
 }

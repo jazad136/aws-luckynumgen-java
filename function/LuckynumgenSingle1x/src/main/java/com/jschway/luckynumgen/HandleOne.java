@@ -76,7 +76,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             List<String> previous = gatherPrevious(startsEnds);
             
             List<String> newNumbers = new LinkedList<>();
-            
+            // improvement: have a single method update both lists. 
             String newNumber = newLuckyNumber(numberIn, previous);
             if(!newNumber.isEmpty()) {
                 newNumbers.add(newNumber); previous.add(newNumber);
@@ -100,6 +100,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
                         .withBody(output);
                 }
             }
+            // improvement, use JSON Object
             
             String messagePart = "\"message\": \"Lucky Number\"";
             String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
