@@ -1,11 +1,11 @@
 package com.jschway.luckynumgen;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,9 +16,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import tools.jackson.databind.ObjectMapper;
 
@@ -26,8 +29,9 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
-    
+    private static LambdaLogger log;
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        log = context.getLogger();
         String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
@@ -72,35 +76,46 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
+            log.log(String.format("Added Numbers %s\n", newNumbers));
 //            List<String> previous = new LinkedList<>(); 
 //            List<String> newNumbers = new LinkedList<>();
 //            for(int i = 0; i < 3; i++) {
 //                String newNumber = newLuckyNumber(numberIn, previous);
 //                newNumbers.add(newNumber); previous.add(newNumber);
 //            }
-            S3AsyncClient s3AsyncClient = S3AsyncClient.builder().build();
+            
+            S3AsyncClient s3AClient = S3AsyncClient.builder()
+                    .region(Region.US_EAST_1)
+                    .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+                    .forcePathStyle(true)
+                    .build();
+            ScheduledExecutorService ses = Executors.newScheduledThreadPool(10);
             Collection<String> affectedDigits = affectedDigits(newNumbers);
             final List<LuckyNumberMessage> simpleMessages = new LinkedList<>();
-            var s3Writes = affectedDigits.stream().map(digit -> { 
-                AsyncRequestBody s3Body = AsyncRequestBody.fromString(remainderFileString(digit, previous));
-                String key = String.format("single/0%s.json", digit);
-                return s3AsyncClient.putObject(r -> r.bucket("s3://" + BUCKETNAME).key(key), s3Body);
-            }).collect(Collectors.toList()).toArray(new CompletableFuture[0]);
-
-            CompletableFuture<Void> responses = CompletableFuture.allOf(s3Writes)
-                .exceptionally(e -> {
-                    if (e != null)
-                        simpleMessages.add(new LuckyNumberMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage()));
-                    return null;
-                }
-            );
+            List<CompletableFuture<String>> s3Writes = affectedDigits.stream().map(digit -> {
+                String nextKey = String.format("single/0%s.json", digit);
+                return uploadToS3(s3AClient, BUCKETNAME, nextKey, remainderFileString(digit, previous));
+            }).collect(Collectors.toList());
+            CompletableFuture<?>[] futuresArray = s3Writes.toArray(new CompletableFuture<?>[0]);
+            CompletableFuture<List<String>> listWrites = CompletableFuture.allOf(futuresArray)
+                .thenApply(v -> s3Writes.stream().map(CompletableFuture::join).collect(Collectors.toList()));
+            final List<String> messages = listWrites.join();
+//            
+//            CompletableFuture<Void> responses = CompletableFuture.allOf(cfs)
+//                .exceptionally(e -> {
+//                    if (e != null)
+//                        simpleMessages.add(new LuckyNumberMessage("" + e.getClass().getSimpleName() + ": " + e.getMessage()));
+//                    return null;
+//                }
+//            );
 //            try { 
-            responses.join();
+//            responses.join();
 //            } catch(ExecutionException e) { 
 //                
 //            }
-            if(!simpleMessages.isEmpty()) {
-                LuckyNumberMessages messages = getMessagesCollection(simpleMessages);
+            List<String> issues = getIssues(messages);
+            if(!issues.isEmpty()) {
+                LuckyNumberMessages issueMessages = new LuckyNumberMessages(issues);
                 ObjectMapper mapper = new ObjectMapper();
                 output = mapper.writeValueAsString(messages);
             }
@@ -126,6 +141,24 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                 .withBody(output);
     }
     
+    public static List<String> getIssues(final List<String> messages) { 
+        IntStream.range(0, messages.size()).boxed().map(idx -> {
+                if(messages.get(idx).isBlank()) {
+                    return String.format("%d : %s", idx, messages.get(idx));
+                };
+                return "";
+        }).filter(msg -> !msg.isEmpty()).collect(Collectors.toList());
+        return null;
+    }
+    public static CompletableFuture<String> uploadToS3(S3AsyncClient s3AsyncClient, String bucketName, String bucketKey, String content) {
+        AsyncRequestBody s3Body = AsyncRequestBody.fromString(content);
+        return s3AsyncClient.putObject(r -> r.bucket(bucketName).key(bucketKey), s3Body)
+            .handle((putResponse, throwable) -> { 
+                if(throwable != null) 
+                    return throwable.getMessage();
+                return "";
+        });
+    }
 //    public CompletableFuture<PutObjectResponse> addToS3Bucket(S3AsyncClient client, String bucketName) { 
 //        return client.putObject(r -> r.bucket("mybucket-jschway939").key(key), s3Body)
 //            .exceptionally(e -> {
@@ -134,6 +167,7 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
 //                return null;
 //            });
 //    }
+    
     public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
         return new LuckyNumberMessages(simpleMessages.stream()
             .map(LuckyNumberMessage::getMessage)
