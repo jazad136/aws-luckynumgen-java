@@ -18,7 +18,6 @@ import java.lang.reflect.Method;
 import org.testng.annotations.DataProvider;
 
 /**
- *
  * @author Jonathan Saddler
  */
 public class TestDataProvider {
@@ -72,15 +71,22 @@ public class TestDataProvider {
         }
         return data;
     }
+    @DataProvider
     public static Object[][] methodDataProviderPositive1xSuite(Method method) {
         // separate data for each test
         System.out.println("Test method name: " + method.getName()); 
         Object data[][] = null;
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
-            data = new Object[1][3];
+            data = new Object[3][3];
             data[0][0] = "1";
             data[0][1] = "1";
-            data[0][2] = "Positive Numbers: Input 1";
+            data[0][2] = "Positive Numbers: Input 1 (1st attempt)";
+            data[1][0] = "1";
+            data[1][1] = "1";
+            data[1][2] = "Positive Numbers: Input 1 (2nd attempt)";
+            data[2][0] = "1";
+            data[2][1] = "1";
+            data[2][2] = "Positive Numbers: Input 1 (3rd attempt)";
         }
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBER")) { 
             data = new Object[9][3];
@@ -101,11 +107,11 @@ public class TestDataProvider {
     
     public static String getTestNamePositiveSuite(String methodName, Object[] params) {
         if(methodName.toUpperCase().equals("TESTGENCONTAINSNUMBER")) { 
-            if(params != null && params.length > 0)
+            if(params != null && params.length > 2)
                 return params[2].toString();
         }
         if(methodName.toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
-            if(params != null && params.length > 0)
+            if(params != null && params.length > 2)
                 return params[2].toString();
         }
         return "Positive Suite";
