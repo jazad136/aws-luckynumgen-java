@@ -20,6 +20,8 @@ CHANGELOG
 - (inputs 1-3 don't update to cloud at all for now) 
 - 08/13 : Add capabilities to store numbers generated. Focus on making input numbers 4,5,6 trigger upload to S3 sequentially. Test other #s later. 
 - 08/14 : Inputs 1-3 update cloud now, and should only generate numbers with a 1/2/3 that were not previously generated.
+- 08/15 : Refocus on generating 2-digit numbers first then move on to 3-digit later
+- & add Test files to test S3 and API Gateway Functionality (for 1x, Jayway and RestAssured) 
 
 NOTES: 
 
