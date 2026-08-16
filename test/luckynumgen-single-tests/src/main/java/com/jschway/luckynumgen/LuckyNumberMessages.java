@@ -18,7 +18,6 @@ public class LuckyNumberMessages {
             this.messages.put(""+(i+1), messages.get(i));
     }
 
-    
     @JsonAnyGetter
     public HashMap<String, String> getMessageMap() { return messages; } 
     @JsonAnySetter

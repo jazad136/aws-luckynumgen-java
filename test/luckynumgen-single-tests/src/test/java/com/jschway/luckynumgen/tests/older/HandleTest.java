@@ -1,5 +1,6 @@
-package com.jschway.luckynumgen.tests;
+package com.jschway.luckynumgen.tests.older;
 
+import com.jschway.luckynumgen.tests.TestHelpMethods;
 import static com.jschway.luckynumgen.tests.TestHelpMethods.setupLogger;
 import java.util.LinkedHashSet;
 import java.util.List;

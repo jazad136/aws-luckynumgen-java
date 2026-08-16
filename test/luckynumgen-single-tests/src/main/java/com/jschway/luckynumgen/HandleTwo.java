@@ -1,53 +1,33 @@
 package com.jschway.luckynumgen;
-/*
-Copyright 2026 Jonathan Saddler
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handler for requests to Lambda function.
  */
-public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
-    LambdaLogger log;
+public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> { 
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
-        log = context.getLogger();
         String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
@@ -63,18 +43,12 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         String numberIn = "";
         if (!lastX.isBlank()) { 
             numberIn = switch(lastX) { 
-                case "1" -> "1";
-                case "2" -> "2";
-                case "3" -> "3";
+                case "4" -> "4";
+                case "5" -> "5";
+                case "6" -> "6";
                 default -> "";
             };
         }
-        S3Client s3Client = S3Client.builder()
-            .region(Region.US_EAST_1)
-            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
-            .forcePathStyle(true)
-            .build();
-        
         String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
@@ -83,16 +57,9 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             output = String.format("{ \"message\": \"Value %s is out of range\" }", lastX);
         }
         else {
-            String readKey = String.format("single/0%s.json", numberIn);
-            String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
-            log.log(String.format("s3Content : %s\n",generatedContent));
-            ObjectMapper mapper = new ObjectMapper();
-            ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
-
-            List<String> previous = gatherPrevious(startsEnds);
-            
+            List<String> previous = new LinkedList<>(); 
             List<String> newNumbers = new LinkedList<>();
-            // improvement: have a single method update both lists. 
+            
             String newNumber = newLuckyNumber(numberIn, previous);
             if(!newNumber.isEmpty()) {
                 newNumbers.add(newNumber); previous.add(newNumber);
@@ -105,61 +72,38 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
-            // upload to S3
+            
+            // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/best-practices-s3-uploads.html
             for(String digit : affectedDigits(newNumbers)) { 
-                String bucketKey = "single/0" + digit + ".json";
-                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
+                S3Client s3Client = S3Client.builder()
+                    .region(Region.US_EAST_1)
+                    .build();
+                String bucketKey = "0" + digit + ".json";
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(bucketKey, previous));
                 if(!result.isEmpty()) {
+                    ObjectMapper mapper = new ObjectMapper();
                     output = mapper.writeValueAsString(new LuckyNumberMessages(result));
                     return response
                         .withStatusCode(502)
                         .withBody(output);
                 }
             }
-            // improvement, use JSON Object
             
             String messagePart = "\"message\": \"Lucky Number\"";
             String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
             String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
             String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
             output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
-        }
+        }              
+        
         return response
                 .withStatusCode(200)
                 .withBody(output);
     }
-    
-    
-    public String remainderFileString(String numberIn, List<String> previous) { 
-        final LinkedList<String> starts = new LinkedList<>();
-        final LinkedList<String> ends = new LinkedList<>();
-        for(int j = 1; j <= 9; j++) 
-            if(previous.contains(numberIn+j)) 
-                starts.add(numberIn+j);
-        for (int k = 1; k <= 9; k++) {
-            if(!(""+k).equals(numberIn)) // don't insert repeats in second list
-                if(previous.contains(k + numberIn))
-                    ends.add(k+numberIn);
-        }
-        ListBundleMessage generated = new ListBundleMessage(starts, ends);
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(generated);
-    }
-    public static String getFromS3(S3Client s3Client, String bucketName, String bucketKey)  {
-        try (ResponseInputStream<GetObjectResponse> body = s3Client.getObject(b -> b.bucket(bucketName).key(bucketKey));) { 
-            String toReturn = new String(body.readAllBytes(), StandardCharsets.UTF_8);
-            body.abort();
-            return toReturn;
-        } catch(IOException iex) { 
-            return iex.getMessage();
-        } catch(S3Exception | SdkClientException e) {
-            return e.getMessage();
-        }
-    }
     public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
         try {
             RequestBody body = RequestBody.fromString(content);
-            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
+            s3Client.putObject(b -> b.bucket(System.getenv("BUCKET_NAME")).key(bucketKey), body);
             return "";
         } catch(S3Exception | SdkClientException e) {
             return e.getMessage();
@@ -175,18 +119,31 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         for(String numStr : newNumbers) 
             for(char c : numStr.toCharArray())
                 affected.add(""+c);
+        
         return affected;
     }
     
-//    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
-//        
-//    }
+    public String remainderFileString(String numberIn, List<String> previous) { 
+        final LinkedList<String> starts = new LinkedList<>();
+        final LinkedList<String> ends = new LinkedList<>();
+        for(int j = 1; j <= 9; j++) 
+            if(previous.contains(numberIn+j)) 
+                starts.add(numberIn+j);
+        for (int k = 1; k <= 9; k++)
+            if(previous.contains(k + numberIn))
+                ends.add(k+numberIn);
+        ListBundleMessage generated = new ListBundleMessage(starts, ends);
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(generated);
+    }
+    
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
         // construct potentials list on the fly
-        for(int j = 1; j <= 9; j++)
+        for(int j = 1; j <= 9; j++) 
             lis.add(numberIn + j);
-        for (int k = 9; k >= 1; k--)
+        lis.add(numberIn);
+        for (int k = 9; k >= 1; k--) 
             lis.add(k+ numberIn);
         // do not consider previously picked. 
         lis.removeAll(previous);
@@ -196,12 +153,5 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         // select a number
         Random r = new Random();
         return lis.get((int)r.nextInt(lis.size()));
-    }
-
-    private List<String> gatherPrevious(ListBundleMessage startsEnds) {
-        TreeSet<String> previous = new TreeSet<>();
-        previous.addAll(startsEnds.getGenerated().getStarts());
-        previous.addAll(startsEnds.getGenerated().getEnds());
-        return new LinkedList<>(previous);
     }
 }

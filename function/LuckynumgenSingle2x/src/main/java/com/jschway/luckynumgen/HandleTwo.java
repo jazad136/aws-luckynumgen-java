@@ -8,7 +8,9 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -16,10 +18,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.ObjectMapper;
 
@@ -51,6 +55,13 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 default -> "";
             };
         }
+        S3Client s3Client = S3Client.builder()
+            .region(Region.US_EAST_1)
+            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+            .forcePathStyle(true)
+            .build();
+        
+        
         String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
@@ -59,9 +70,15 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
             output = String.format("{ \"message\": \"Value %s is out of range\" }", lastX);
         }
         else {
-            List<String> previous = new LinkedList<>(); 
-            List<String> newNumbers = new LinkedList<>();
+            String readKey = String.format("single/0%s.json", numberIn);
+            String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
+            ObjectMapper mapper = new ObjectMapper();
+            ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
+
+            List<String> previous = gatherPrevious(startsEnds);
             
+            List<String> newNumbers = new LinkedList<>();
+            // improvement: have a single method update both lists. 
             String newNumber = newLuckyNumber(numberIn, previous);
             if(!newNumber.isEmpty()) {
                 newNumbers.add(newNumber); previous.add(newNumber);
@@ -74,73 +91,30 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
             if(!newNumber.isEmpty()) { 
                 newNumbers.add(newNumber); previous.add(newNumber);
             }
-            
-            // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/best-practices-s3-uploads.html
-            // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/examples-s3.html
+            // upload to S3
             for(String digit : affectedDigits(newNumbers)) { 
-                S3Client s3Client = S3Client.builder()
-                    .region(Region.US_EAST_1)
-                    .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
-                    .forcePathStyle(true)
-                    .build();
                 String bucketKey = "single/0" + digit + ".json";
                 String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
                 if(!result.isEmpty()) {
-                    ObjectMapper mapper = new ObjectMapper();
                     output = mapper.writeValueAsString(new LuckyNumberMessages(result));
                     return response
                         .withStatusCode(502)
                         .withBody(output);
                 }
             }
+            // improvement, use JSON Object
             
             String messagePart = "\"message\": \"Lucky Number\"";
             String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
             String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
             String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
             output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
-        }              
-        
+        }
         return response
                 .withStatusCode(200)
                 .withBody(output);
     }
-    public static String uploadToS3(S3Client s3Client, String name, String bucketKey, String content) {
-        try {
-//            Directory buckets - When you use this operation with a directory bucket, 
-//            you must use virtual-hosted-style requests in the format 
-//            Bucket-name.s3express-zone-id.region-code.amazonaws.com. 
-//            Path-style requests are not supported. 
-//            Directory bucket names must be unique in the 
-//            chosen Zone (Availability Zone or Local Zone). 
-//            Bucket names must follow the format bucket-base-name--zone-id--x-s3 
-//            (for example, amzn-s3-demo-bucket--usw2-az1--x-s3). 
-//            For information about bucket naming restrictions, 
-//            see Directory bucket naming rules in the Amazon S3 User Guide.
-            
-            RequestBody body = RequestBody.fromString(content);
-//            String bucketName = String.format(String.format("%s--use1--x-s3",name));
-            String bucketName = String.format(String.format("%s",name));
-            // amzn-s3-demo-bucket--usw2-az1--x-s3
-            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
-            return "";
-        } catch(S3Exception | SdkClientException e) {
-            return e.getMessage();
-        }
-    }
-    public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
-        return new LuckyNumberMessages(simpleMessages.stream()
-            .map(LuckyNumberMessage::getMessage)
-            .collect(Collectors.toList()));
-    }
-    private Collection<String> affectedDigits(Collection<String> newNumbers) { 
-        Set<String> affected = new TreeSet<>();
-        for(String numStr : newNumbers) 
-            for(char c : numStr.toCharArray())
-                affected.add(""+c);
-        
-        return affected;
-    }
+    
     
     public String remainderFileString(String numberIn, List<String> previous) { 
         final LinkedList<String> starts = new LinkedList<>();
@@ -157,13 +131,44 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(generated);
     }
+    public static String getFromS3(S3Client s3Client, String bucketName, String bucketKey)  {
+        try (ResponseInputStream<GetObjectResponse> body = s3Client.getObject(b -> b.bucket(bucketName).key(bucketKey));) { 
+            String toReturn = new String(body.readAllBytes(), StandardCharsets.UTF_8);
+            body.abort();
+            return toReturn;
+        } catch(IOException iex) { 
+            return iex.getMessage();
+        } catch(S3Exception | SdkClientException e) {
+            return e.getMessage();
+        }
+    }
+    public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
+        try {
+            RequestBody body = RequestBody.fromString(content);
+            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
+            return "";
+        } catch(S3Exception | SdkClientException e) {
+            return e.getMessage();
+        }
+    }
+    public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
+        return new LuckyNumberMessages(simpleMessages.stream()
+            .map(LuckyNumberMessage::getMessage)
+            .collect(Collectors.toList()));
+    }
+    private Collection<String> affectedDigits(Collection<String> newNumbers) { 
+        Set<String> affected = new TreeSet<>();
+        for(String numStr : newNumbers) 
+            for(char c : numStr.toCharArray())
+                affected.add(""+c);
+        return affected;
+    }
     
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
         // construct potentials list on the fly
         for(int j = 1; j <= 9; j++) 
             lis.add(numberIn + j);
-        lis.add(numberIn);
         for (int k = 9; k >= 1; k--) 
             lis.add(k+ numberIn);
         // do not consider previously picked. 
@@ -174,5 +179,12 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
         // select a number
         Random r = new Random();
         return lis.get((int)r.nextInt(lis.size()));
+    }
+
+    private List<String> gatherPrevious(ListBundleMessage startsEnds) {
+        TreeSet<String> previous = new TreeSet<>();
+        previous.addAll(startsEnds.getGenerated().getStarts());
+        previous.addAll(startsEnds.getGenerated().getEnds());
+        return new LinkedList<>(previous);
     }
 }

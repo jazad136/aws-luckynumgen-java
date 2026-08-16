@@ -19,7 +19,7 @@ CHANGELOG
 - 08/12 : Update the handler for gen 4-6 to use single threads to upload files / then inputs 7-9 parallel threads. Test Perf Later
 - (inputs 1-3 don't update to cloud at all for now) 
 - 08/13 : Add capabilities to store numbers generated. Focus on making input numbers 4,5,6 trigger upload to S3 sequentially. Test other #s later. 
-- 08/14 : Inputs 1, 2, or 3 should only generate new outputs containing 1,2, or 3 not previously generated.
+- 08/14 : Inputs 1-3 update cloud now, and should only generate numbers with a 1/2/3 that were not previously generated.
 
 NOTES: 
 

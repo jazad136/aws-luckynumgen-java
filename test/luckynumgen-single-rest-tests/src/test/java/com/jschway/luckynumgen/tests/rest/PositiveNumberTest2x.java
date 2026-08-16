@@ -28,14 +28,14 @@ import org.testng.annotations.Test;
  *
  * @author JonathanSaddler
  */
-public class PositiveNumberTest1x extends TestBase{
+public class PositiveNumberTest2x extends TestBase{
     @BeforeClass(dependsOnMethods = "init")
     public void setBasePath() { 
-        RestAssured.basePath = "/onex";
+        RestAssured.basePath = "/twox";
     }
     
     @Test(dataProviderClass = TestDataProvider.class, 
-          dataProvider = "methodDataProviderPositive1xSuite")
+          dataProvider = "methodDataProviderPositive2xSuite")
     public void testGenContainsNumberSimple(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
         var response = given()
