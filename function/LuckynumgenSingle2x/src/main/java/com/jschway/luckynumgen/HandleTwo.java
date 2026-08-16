@@ -169,7 +169,6 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
         // construct potentials list on the fly
         for(int j = 1; j <= 9; j++) 
             lis.add(numberIn + j);
-        lis.add(numberIn);
         for (int k = 9; k >= 1; k--) 
             lis.add(k+ numberIn);
         // do not consider previously picked. 

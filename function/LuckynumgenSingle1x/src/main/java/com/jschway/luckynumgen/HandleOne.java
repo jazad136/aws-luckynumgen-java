@@ -1,5 +1,19 @@
 package com.jschway.luckynumgen;
+/*
+Copyright 2026 Jonathan Saddler
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -31,7 +45,9 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+    LambdaLogger log;
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+        log = context.getLogger();
         String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
@@ -59,7 +75,6 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             .forcePathStyle(true)
             .build();
         
-        
         String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
@@ -70,6 +85,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         else {
             String readKey = String.format("single/0%s.json", numberIn);
             String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
+            log.log(String.format("s3Content : %s\n",generatedContent));
             ObjectMapper mapper = new ObjectMapper();
             ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
 
@@ -162,13 +178,15 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         return affected;
     }
     
+//    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
+//        
+//    }
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
         // construct potentials list on the fly
-        for(int j = 1; j <= 9; j++) 
+        for(int j = 1; j <= 9; j++)
             lis.add(numberIn + j);
-        lis.add(numberIn);
-        for (int k = 9; k >= 1; k--) 
+        for (int k = 9; k >= 1; k--)
             lis.add(k+ numberIn);
         // do not consider previously picked. 
         lis.removeAll(previous);

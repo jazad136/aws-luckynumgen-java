@@ -17,17 +17,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -175,7 +169,6 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         // construct potentials list on the fly
         for(int j = 1; j <= 9; j++) 
             lis.add(numberIn + j);
-        lis.add(numberIn);
         for (int k = 9; k >= 1; k--) 
             lis.add(k+ numberIn);
         // do not consider previously picked. 
