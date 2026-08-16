@@ -14,10 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import com.jayway.jsonpath.JsonPath;
 import com.jschway.luckynumgen.tests.TestBase;
 import com.jschway.luckynumgen.tests.config.TestDataProvider;
 import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
+import java.util.List;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import org.testng.ITestResult;
@@ -25,7 +27,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- *
  * @author JonathanSaddler
  */
 public class PositiveNumberTest1x extends TestBase{
@@ -41,19 +42,30 @@ public class PositiveNumberTest1x extends TestBase{
         var response = given()
          .pathParam("numberIn", numberIn)
          .when()
-         .get("/{numberIn}")
-         .then()
-         .statusCode(200);
-        i("Testing number1 contains " + numberContains);
+         .get("/{numberIn}");
+        var jsonResult = response.asString();
+        
+        i("Testing number1 contains a " + numberContains);
+        String number1 = JsonPath.read(jsonResult, "$.number1");
+        iFormat("Number1: %s", number1);
         response
+         .then()
+         .statusCode(200)
          .and()
          .body("number1", containsString(numberContains));
-        i("Testing number2 contains " + numberContains);
+        
+        i("Testing number2 contains a " + numberContains);
+        String number2 = JsonPath.read(jsonResult, "$.number2");
+        iFormat("Number2: %s", number2);
         response
-         .and()
+         .then()
          .body("number2", containsString(numberContains));
-        i("Testing number3 contains " + numberContains);
+        
+        i("Testing number3 contains a " + numberContains);
+        String number3 = JsonPath.read(jsonResult, "$.number3");
+        iFormat("Number3: %s", number3);
         response
+         .then()
          .body("number3", containsString(numberContains));
     }
     public void testGenContainsNumber(String numberIn, String numberContains, String testName) {
