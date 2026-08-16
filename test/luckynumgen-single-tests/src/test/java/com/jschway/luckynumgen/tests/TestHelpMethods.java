@@ -1,5 +1,6 @@
 package com.jschway.luckynumgen.tests;
 
+import com.jschway.luckynumgen.tests.older.HandleTest;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.NoSuchElementException;

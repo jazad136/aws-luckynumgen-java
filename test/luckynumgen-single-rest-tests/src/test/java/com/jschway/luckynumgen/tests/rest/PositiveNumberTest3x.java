@@ -28,14 +28,14 @@ import org.testng.annotations.Test;
  *
  * @author JonathanSaddler
  */
-public class PositiveNumberTest1x extends TestBase{
+public class PositiveNumberTest3x extends TestBase{
     @BeforeClass(dependsOnMethods = "init")
     public void setBasePath() { 
-        RestAssured.basePath = "/onex";
+        RestAssured.basePath = "/threex";
     }
     
     @Test(dataProviderClass = TestDataProvider.class, 
-          dataProvider = "methodDataProviderPositive1xSuite")
+          dataProvider = "methodDataProviderPositive2xSuite")
     public void testGenContainsNumberSimple(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
         var response = given()
@@ -56,6 +56,7 @@ public class PositiveNumberTest1x extends TestBase{
         response
          .body("number3", containsString(numberContains));
     }
+    
     public void testGenContainsNumber(String numberIn, String numberContains, String testName) {
         i("Testing response is 200");
         var response = given()
@@ -76,47 +77,6 @@ public class PositiveNumberTest1x extends TestBase{
         response
          .body("number3", contains(numberContains));
     }
-
-//    @DisplayName("Get the total value from the response")
-//    @Test
-//    public void getTotalFromResponse() {
-//        int totalValue = JsonPath.read(jsonResponse, "$.total");
-//        print(totalValue + "");
-//    }
-    
-//    @DisplayName("Get all the data elements")
-//    @Test
-//    public void getAllDataElements() { 
-//        List<HashMap<String, Object>> dataElements = JsonPath.read(jsonResponse, "$.data");
-//        dataElements.stream().forEach(System.out::println);
-//    }
-//    
-//    @DisplayName("Get firstDataElement")
-//    @Test
-//    public void getFirstDataElement() { 
-//        Map<String,?> firstDataElement = JsonPath.read(jsonResponse, "$.data[0]");
-//        print(firstDataElement.toString());
-//    }
-//    @DisplayName("Get lastDataElement")
-//    @Test
-//    public void getLastDataElement() { 
-//        Map<String,?> firstDataElement = JsonPath.read(jsonResponse, "$.data[-1]");
-//        print(firstDataElement.toString());
-//    }
-//    
-//    @DisplayName("Get all ids in the data")
-//    @Test
-//    public void getAllIdsUnderData() { 
-//        List<String> dataElements = JsonPath.read(jsonResponse, "$.data[*].id");
-//        print(dataElements.toString());
-//    }
-//    
-//    @DisplayName("Get all ids in the data")
-//    @Test
-//    public void getAllIds() { 
-//        List<String> dataElements = JsonPath.read(jsonResponse, "$..id");
-//        print(dataElements.toString());
-//    }
 
     @Override
     public String retrieveTestNameSuffix(ITestResult res) {

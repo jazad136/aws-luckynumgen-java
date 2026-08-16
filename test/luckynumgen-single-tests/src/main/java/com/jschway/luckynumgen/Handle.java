@@ -1,10 +1,22 @@
 package com.jschway.luckynumgen;
 
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class Handle {
+    public static APIGatewayProxyRequestEvent getRequest(String numberIn) { 
+        APIGatewayProxyRequestEvent newEv = new APIGatewayProxyRequestEvent();
+        newEv.setPathParameters(Map.of("1", numberIn));
+        return newEv;
+    }
+
+    public static Context getTestContext() {
+        return null;
+    }
     public Handle() { 
         
     }
