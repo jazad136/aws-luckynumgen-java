@@ -23,6 +23,7 @@ CHANGELOG
 - 08/15 : Refocus on generating 2-digit numbers first then move on to 3-digit later
 - & add Test files to test S3 and API Gateway Functionality (for 1x, Jayway and RestAssured) 
 - 08/16 : Send error to frontend when no new numbers can be generated (inputs 1-3)
+- 08/17 : Handle error in frontend when no new numbers can be generated (any input)
 
 NOTES: 
 
