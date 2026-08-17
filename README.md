@@ -22,6 +22,7 @@ CHANGELOG
 - 08/14 : Inputs 1-3 update cloud now, and should only generate numbers with a 1/2/3 that were not previously generated.
 - 08/15 : Refocus on generating 2-digit numbers first then move on to 3-digit later
 - & add Test files to test S3 and API Gateway Functionality (for 1x, Jayway and RestAssured) 
+- 08/16 : Send error to frontend when no new numbers can be generated (inputs 1-3)
 
 NOTES: 
 
