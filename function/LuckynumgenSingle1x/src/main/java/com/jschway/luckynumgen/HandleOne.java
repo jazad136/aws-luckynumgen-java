@@ -92,18 +92,25 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             List<String> previous = gatherPrevious(startsEnds);
             
             List<String> newNumbers = new LinkedList<>();
-            // improvement: have a single method update both lists. 
-            String newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) {
-                newNumbers.add(newNumber); previous.add(newNumber);
-            }
-            newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) {
-                newNumbers.add(newNumber); previous.add(newNumber);
-            }
-            newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) { 
-                newNumbers.add(newNumber); previous.add(newNumber);
+            // improvement: have a single method update both lists.
+//            String newNumber = newLuckyNumber(numberIn, previous);
+//            if(!newNumber.isEmpty()) {
+//                newNumbers.add(newNumber); previous.add(newNumber);
+//            }
+//            newNumber = newLuckyNumber(numberIn, previous);
+//            if(!newNumber.isEmpty()) {
+//                newNumbers.add(newNumber); previous.add(newNumber);
+//            }
+//            newNumber = newLuckyNumber(numberIn, previous);
+//            if(!newNumber.isEmpty()) { 
+//                newNumbers.add(newNumber); previous.add(newNumber);
+//            }
+            String num1 = newLuckyNumber(numberIn, newNumbers, previous);
+            String num2 = newLuckyNumber(numberIn, newNumbers, previous);
+            String num3 = newLuckyNumber(numberIn, newNumbers, previous);
+            if(num1.isBlank()) {
+                output = mapper.writeValueAsString(new LuckyNumberMaxedout(
+                        String.format("no more %s's", numberIn)));
             }
             // upload to S3
             for(String digit : affectedDigits(newNumbers)) { 
@@ -119,9 +126,9 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             // improvement, use JSON Object
             
             String messagePart = "\"message\": \"Lucky Number\"";
-            String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
-            String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
-            String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
+            String luckyNum1Part = String.format("\"number1\": \"%s\"", num1);
+            String luckyNum2Part = String.format("\"number2\": \"%s\"", num2);
+            String luckyNum3Part = String.format("\"number3\": \"%s\"", num3);
             output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
         }
         return response
@@ -178,9 +185,14 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         return affected;
     }
     
-//    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
-//        
-//    }
+    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
+        String newLuckyNumber = newLuckyNumber(numberIn, previous);
+        if(!newLuckyNumber.isBlank()) {
+            previous.add(newLuckyNumber);
+            newNumber.add(newLuckyNumber);
+        }
+        return newLuckyNumber;
+    }
     public static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
         // construct potentials list on the fly
