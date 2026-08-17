@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Lucky Number Generator</title>
+    
+<style>
+    
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding-top: 50px;
+}
+h2 { 
+    text-align: center;
+    margin-top: 2ex;
+    font-size: 1.1em;
+    text-decoration-line: overline underline;
+}
+#generatorForm {
+    margin: auto;
+    width: fit-content;
+    padding: 20px;
+    border-radius: 5px;
+    background-color: #f2f2f2;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+#selectedLabel {
+    margin-bottom: 5px;
+}
+input, select, button, #resultBox {
+    margin-top: 15px;
+    width: 68px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1.2em;
+    text-align: center;
+}
+#selection, #generate { 
+    width: 250px;
+}
+
+</style>
+</head>
+<body>
+<h2>Simple Lucky Number Generator</h2>
+<form id="generatorForm">
+    <div>
+        <input type="submit" id="generate"  value="Generate Lucky Number"/>
+    </div>
+    <div>
+        <input type="text" id="output1" value=""/>
+        <input type="text" id="output2" value=""/>
+        <input type="text" id="output3" value=""/>
+    </div>
+    <div>
+        <h3 id="selectedLabel">You Selected:</h3>
+        <input id="selection" type="number" id="num1" placeholder="selected value" readonly>
+    </div>
+    <div>
+        <input type="button" id="sel1" value="1" onclick="setSelected(1)"/>
+        <input type="button" id="sel2" value="2" onclick="setSelected(2)"/>
+        <input type="button" id="sel3" value="3" onclick="setSelected(3)"/>
+        <input type="button" id="sel4" value="4" onclick="setSelected(4)"/>
+    </div>
+    <div>
+        <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
+        <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
+        <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
+        <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
+        <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
+    </div>
+</form>
+<h2 id="userMsg" style="display:hidden">User Message</h2>
+<script>
+    function setSelected(number) { 
+        document.getElementById("selection").value = number;
+    }
+    function setUsrMsg(value) { 
+        const usrMsg = document.getElementById('usrMsg');
+        usrMsg.innerText(value)
+    }
+    function chooseApp(selVal) { 
+        app = 'onex'
+        if(selVal === '1' 
+        || selVal === '2' 
+        || selVal === '3') 
+        {
+            app = 'onex'
+        }
+        else if(selVal === '4' 
+            || selVal === '5' 
+            || selVal === '6') 
+        {
+            app = 'twox'
+        }
+        else if(selVal === '7' 
+            || selVal === '8' 
+            || selVal === '9') 
+        {
+            app = 'threex'
+        }
+        return app
+    }
+    function handleData(data) { 
+        var number1 = data.number1
+        var number2 = data.number2
+        var number3 = data.number3
+        
+        document.getElementById('output1').value = number1;
+        document.getElementById('output2').value = number2;
+        document.getElementById('output3').value = number3;
+    }
+    document.getElementById("generatorForm").onsubmit = function(event) {
+        event.preventDefault();
+        var apiUrl = '';
+        const selVal = document.getElementById("selection").value
+        if(selVal && selVal !== '') {
+            // const dplmtStem =  'http://127.0.0.1:3000/';                 
+            const dplmtStem =  '${DEPLOYMENT_STRING_CHANGE_THIS_FOR_UPLOAD}';                 
+            const app = chooseApp(selVal)
+            apiUrl = `${dplmtStem}/${app}/${selVal}`
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.type && data.type === 'exception') {
+                        setUsrMsg('')
+                        if(data.message === 'maxout') {
+                            handleData(data);
+                            // if(data.number3.includes('s')) {
+                            //     setUsrMsg('Please try a different number')
+                            // }
+                            // else {
+                            //     setUsrMsg('');
+                            // }
+                        }
+                    }
+                    // var number1 = data.number1
+                    // var number2 = data.number2
+                    // var number3 = data.number3
+                    
+                    // document.getElementById('output1').value = number1;
+                    // document.getElementById('output2').value = number2;
+                    // document.getElementById('output3').value = number3;
+                })
+                    
+                
+                .catch(error => {
+                    console.error('Error:',error);
+                    if(data.type && data.type === 'exception') {
+                        if(data.message === 'maxout') {
+                            setUsrMsg('');
+                            handleData(data);
+                        }
+                    }
+                })
+        }
+        
+        // if(document.getElementById("selection").value == 1) {
+        // }
+    };
+
+
+</script>
+</body>
+</html>
