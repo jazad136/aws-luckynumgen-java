@@ -26,11 +26,19 @@ CHANGELOG
 - 08/17 : Handle error in frontend when no new numbers can be generated (any input)
 - 08/18 : Applying code style changes across functions. 
 - Tests reveal some impls are still uneven across 1-3/4-6/7-9.
+
   
 NOTES: 
 
-testOneNumber() is an automated test that clicks one number and clicks the "Generate" button to generate a single set of lucky numbers. 
-- later the goal will be to automate a test that clicks several numbers and generates several sets of numbers.
+- wow! Trying to integrate Error Handling Across Functions 1-9 is hard (lots more work to do here)
+
+from 8/18 "merge" commit description: 
+
+Inputs 7-9 have the most modern tight error handling
+
+Inputs 1-3 aren't implementing showing when no more numbers are available. Old numbers get picked. 
+
+Inputs 4-6 not thoroughly tested yet. 
 
 The look of this application July 25, before the challenge:
 ![Lucky Number Generator from July 25](https://github.com/jazad136/aws-luckynumgen-java/raw/main/images/1_2026_July25_LuckyNumGenerator_One.jpg)
