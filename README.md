@@ -30,15 +30,17 @@ CHANGELOG
   
 NOTES: 
 
-- wow! Trying to integrate Error Handling Across Functions 1-9 is hard (lots more work to do here)
+- wow! 
+
+- current effort: Trying to integrate error handling across functions supporting inputs 1-9 (difficult: lots more work to do here)
 
 from 8/18 "merge" commit description: 
 
-Inputs 7-9 have the most modern tight error handling
+**Inputs 7-9** have the most modern tight error handling. Not thoroughly tested yet.
 
-Inputs 1-3 aren't implementing showing when no more numbers are available. Old numbers get picked. 
+**Inputs 1-3** aren't implementing showing when no more numbers are available + Old numbers get picked. 
 
-Inputs 4-6 not thoroughly tested yet. 
+**Inputs 4-6** not thoroughly tested yet. 
 
 The look of this application July 25, before the challenge:
 ![Lucky Number Generator from July 25](https://github.com/jazad136/aws-luckynumgen-java/raw/main/images/1_2026_July25_LuckyNumGenerator_One.jpg)
