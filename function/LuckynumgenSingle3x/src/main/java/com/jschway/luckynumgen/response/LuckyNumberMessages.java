@@ -1,4 +1,4 @@
-package com.jschway.luckynumgen;
+package com.jschway.luckynumgen.response;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -18,7 +18,6 @@ public class LuckyNumberMessages {
             this.messages.put(""+(i+1), messages.get(i));
     }
 
-    
     @JsonAnyGetter
     public HashMap<String, String> getMessageMap() { return messages; } 
     @JsonAnySetter

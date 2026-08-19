@@ -1,20 +1,29 @@
 package com.jschway.luckynumgen;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import com.jschway.luckynumgen.response.LuckyNumberMessage;
+import com.jschway.luckynumgen.s3model.ListBundleMessage;
+import com.jschway.luckynumgen.response.LuckyNumberMessages;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.jschway.luckynumgen.response.LuckyNumberMaxout;
+import com.jschway.luckynumgen.response.LuckyNumbersAttributes;
+import com.jschway.luckynumgen.response.LuckyNumbersAttrsResponseType;
+import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -31,9 +40,9 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> { 
-    private static LambdaLogger log;
+    private static ObjectMapper mapper;
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
-        log = context.getLogger();
+        mapper = new ObjectMapper();
         String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
@@ -72,50 +81,64 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
         else {
             String readKey = String.format("single/0%s.json", numberIn);
             String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
-            ObjectMapper mapper = new ObjectMapper();
             ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
 
             List<String> previous = gatherPrevious(startsEnds);
             
             List<String> newNumbers = new LinkedList<>();
             // improvement: have a single method update both lists. 
-            String newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) {
-                newNumbers.add(newNumber); previous.add(newNumber);
-            }
-            newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) {
-                newNumbers.add(newNumber); previous.add(newNumber);
-            }
-            newNumber = newLuckyNumber(numberIn, previous);
-            if(!newNumber.isEmpty()) { 
-                newNumbers.add(newNumber); previous.add(newNumber);
+            String num1 = newLuckyNumber(numberIn, newNumbers, previous);
+            String num2 = newLuckyNumber(numberIn, newNumbers, previous);
+            String num3 = newLuckyNumber(numberIn, newNumbers, previous);
+            if(num1.isBlank()) {
+                output = mapper.writeValueAsString(new LuckyNumberMaxout(
+                        String.format("no more %s's", numberIn)));
+                return response
+                        .withStatusCode(429) // too many requests
+                        .withBody(output);
             }
             // upload to S3
+            LinkedList<String> maxedout = new LinkedList<>();
             for(String digit : affectedDigits(newNumbers)) { 
                 String bucketKey = "single/0" + digit + ".json";
-                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
+                
+                ListBundleMessage counts = remainderFile(digit, previous);
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, mapper.writeValueAsString(counts));
                 if(!result.isEmpty()) {
                     output = mapper.writeValueAsString(new LuckyNumberMessages(result));
                     return response
                         .withStatusCode(502)
                         .withBody(output);
                 }
+                if(PrelimChecks.bundleFilled(counts.getGenerated(), numberIn))
+                    maxedout.add(digit);
             }
-            // improvement, use JSON Object
-            
-            String messagePart = "\"message\": \"Lucky Number\"";
-            String luckyNum1Part = String.format("\"number1\": \"%s\"", newNumbers.get(0));
-            String luckyNum2Part = String.format("\"number2\": \"%s\"", newNumbers.get(1));
-            String luckyNum3Part = String.format("\"number3\": \"%s\"", newNumbers.get(2));
-            output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
+            if(!maxedout.isEmpty()) {
+                LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
+                numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
+                output = mapper.writeValueAsString(numbersMsg);
+            }
+            else
+                output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
         }
         return response
                 .withStatusCode(200)
                 .withBody(output);
     }
     
-    
+    public ListBundleMessage remainderFile(String numberIn, List<String> previous) { 
+        final LinkedList<String> starts = new LinkedList<>();
+        final LinkedList<String> ends = new LinkedList<>();
+        for(int j = 1; j <= 9; j++) 
+            if(previous.contains(numberIn+j)) 
+                starts.add(numberIn+j);
+        for (int k = 1; k <= 9; k++) {
+            if(!(""+k).equals(numberIn)) // don't insert repeats in second list
+                if(previous.contains(k + numberIn))
+                    ends.add(k+numberIn);
+        }
+        return new ListBundleMessage(starts, ends);
+    }
     public String remainderFileString(String numberIn, List<String> previous) { 
         final LinkedList<String> starts = new LinkedList<>();
         final LinkedList<String> ends = new LinkedList<>();
@@ -142,6 +165,7 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
             return e.getMessage();
         }
     }
+
     public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
         try {
             RequestBody body = RequestBody.fromString(content);
@@ -163,8 +187,28 @@ public class HandleTwo implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 affected.add(""+c);
         return affected;
     }
-    
-    public static String newLuckyNumber(String numberIn, List<String> previous) {
+    private static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
+        LinkedHashSet<String> picks = new LinkedHashSet<>();
+        // construct potentials list on the fly
+        for(int j = 1; j <= 9; j++) 
+            picks.add(numberIn + j);
+        for (int k = 9; k >= 1; k--) 
+            picks.add(k+ numberIn);
+        
+        // do not consider previously picked. 
+        picks.removeAll(previous);
+        if(picks.isEmpty())
+            return "";
+        
+        // select a number
+        SecureRandom r = new SecureRandom();
+        int pickIdx = r.nextInt(picks.size());
+        String pick = new LinkedList<>(picks).get(pickIdx);
+        previous.add(pick);
+        newNumber.add(pick);
+        return pick;
+    }
+    private static String newLuckyNumber(String numberIn, List<String> previous) {
         List<String> lis = new ArrayList<>();
         // construct potentials list on the fly
         for(int j = 1; j <= 9; j++) 

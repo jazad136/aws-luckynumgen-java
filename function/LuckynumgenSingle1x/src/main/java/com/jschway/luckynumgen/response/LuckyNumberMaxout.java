@@ -1,11 +1,12 @@
-package com.jschway.luckynumgen;
+package com.jschway.luckynumgen.response;
 
+import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
 import com.fasterxml.jackson.annotation.JsonGetter;
 
-public class LuckyNumberMaxedout extends LuckyNumbersResponseType { 
+public class LuckyNumberMaxout extends LuckyNumbersResponseType { 
     
-    public LuckyNumberMaxedout(String message) { 
-        setMessage(message);
+    public LuckyNumberMaxout(String message) { 
+        super(message);
         String[] split3 = message.split(" ");
         setNumber1(split3[0]);
         setNumber2(split3[1]);

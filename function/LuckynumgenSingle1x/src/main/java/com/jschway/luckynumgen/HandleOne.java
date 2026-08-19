@@ -19,12 +19,18 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.jschway.luckynumgen.response.LuckyNumberMaxout;
+import com.jschway.luckynumgen.response.LuckyNumberMessage;
+import com.jschway.luckynumgen.response.LuckyNumberMessages;
+import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
+import com.jschway.luckynumgen.s3model.ListBundleMessage;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +51,9 @@ import tools.jackson.databind.ObjectMapper;
  * Handler for requests to Lambda function.
  */
 public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
-    LambdaLogger log;
+    private ObjectMapper mapper;
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
-        log = context.getLogger();
+        mapper = new ObjectMapper();
         String BUCKETNAME = System.getenv("BUCKETNAME");
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
@@ -85,8 +91,6 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
         else {
             String readKey = String.format("single/0%s.json", numberIn);
             String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
-            log.log(String.format("s3Content : %s\n",generatedContent));
-            ObjectMapper mapper = new ObjectMapper();
             ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
 
             List<String> previous = gatherPrevious(startsEnds);
@@ -109,7 +113,7 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
             String num2 = newLuckyNumber(numberIn, newNumbers, previous);
             String num3 = newLuckyNumber(numberIn, newNumbers, previous);
             if(num1.isBlank()) {
-                output = mapper.writeValueAsString(new LuckyNumberMaxedout(
+                output = mapper.writeValueAsString(new LuckyNumberMaxout(
                         String.format("no more %s's", numberIn)));
             }
             // upload to S3
@@ -124,12 +128,14 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 }
             }
             // improvement, use JSON Object
-            
-            String messagePart = "\"message\": \"Lucky Number\"";
-            String luckyNum1Part = String.format("\"number1\": \"%s\"", num1);
-            String luckyNum2Part = String.format("\"number2\": \"%s\"", num2);
-            String luckyNum3Part = String.format("\"number3\": \"%s\"", num3);
-            output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
+
+            var returnVal = new LuckyNumbersResponseType("Lucky Number", num1, num2, num3);
+            output = mapper.writeValueAsString(returnVal);
+//            String messagePart = "\"message\": \"Lucky Number\"";
+//            String luckyNum1Part = String.format("\"number1\": \"%s\"", num1);
+//            String luckyNum2Part = String.format("\"number2\": \"%s\"", num2);
+//            String luckyNum3Part = String.format("\"number3\": \"%s\"", num3);
+//            output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
         }
         return response
                 .withStatusCode(200)
@@ -184,30 +190,51 @@ public class HandleOne implements RequestHandler<APIGatewayProxyRequestEvent, AP
                 affected.add(""+c);
         return affected;
     }
-    
-    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
-        String newLuckyNumber = newLuckyNumber(numberIn, previous);
-        if(!newLuckyNumber.isBlank()) {
-            previous.add(newLuckyNumber);
-            newNumber.add(newLuckyNumber);
-        }
-        return newLuckyNumber;
-    }
-    public static String newLuckyNumber(String numberIn, List<String> previous) {
-        List<String> lis = new ArrayList<>();
+    private static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
+        LinkedHashSet<String> picks = new LinkedHashSet<>();
         // construct potentials list on the fly
-        for(int j = 1; j <= 9; j++)
-            lis.add(numberIn + j);
-        for (int k = 9; k >= 1; k--)
-            lis.add(k+ numberIn);
+        for(int j = 1; j <= 9; j++) 
+            picks.add(numberIn + j);
+        for (int k = 9; k >= 1; k--) 
+            picks.add(k+ numberIn);
+        
         // do not consider previously picked. 
-        lis.removeAll(previous);
-        if(lis.isEmpty())
+        picks.removeAll(previous);
+        if(picks.isEmpty())
             return "";
         
         // select a number
+        SecureRandom r = new SecureRandom();
+        int pickIdx = r.nextInt(picks.size());
+        String pick = new LinkedList<>(picks).get(pickIdx);
+        previous.add(pick);
+        newNumber.add(pick);
+        return pick;
+    }
+//    public static String newLuckyNumber(String numberIn, List<String> previous, List<String> newNumber) { 
+//        String newLuckyNumber = newLuckyNumber(numberIn, previous);
+//        if(!newLuckyNumber.isBlank()) {
+//            previous.add(newLuckyNumber);
+//            newNumber.add(newLuckyNumber);
+//        }
+//        return newLuckyNumber;
+//    }
+    public static String newLuckyNumber(String numberIn, List<String> previous) {
+        LinkedHashSet<String> picks = new LinkedHashSet<>();
+        // construct potentials list on the fly
+        for(int j = 1; j <= 9; j++) {
+            picks.add(numberIn + j);
+        }
+        for (int k = 9; k >= 1; k--)
+            picks.add(k+ numberIn);
+        // do not consider previously picked. 
+        picks.removeAll(previous);
+        if(picks.isEmpty())
+            return "";
+
+        // select a number
         Random r = new Random();
-        return lis.get((int)r.nextInt(lis.size()));
+        return (new LinkedList<>(picks)).get((int)r.nextInt(picks.size()));
     }
 
     private List<String> gatherPrevious(ListBundleMessage startsEnds) {
