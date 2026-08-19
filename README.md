@@ -24,7 +24,9 @@ CHANGELOG
 - & add Test files to test S3 and API Gateway Functionality (for 1x, Jayway and RestAssured) 
 - 08/16 : Send error to frontend when no new numbers can be generated (inputs 1-3)
 - 08/17 : Handle error in frontend when no new numbers can be generated (any input)
-
+- 08/18 : Applying code style changes across functions. 
+- Tests reveal some impls are still uneven across 1-3/4-6/7-9.
+  
 NOTES: 
 
 testOneNumber() is an automated test that clicks one number and clicks the "Generate" button to generate a single set of lucky numbers. 

@@ -12,16 +12,6 @@ body {
     text-align: center;
     padding-top: 50px;
 }
-h2 { 
-    text-align: center;
-}
-h3#userMsg { 
-    text-align: center;
-    margin-top: 2ex;
-    font-size: 1.1em;
-    text-decoration-line: overline underline;
-    visibility: hidden;
-}
 #generatorForm {
     margin: auto;
     width: fit-content;
@@ -45,14 +35,13 @@ input, select, button, #resultBox {
 #selection, #generate { 
     width: 250px;
 }
-
 </style>
 </head>
 <body>
 <h2>Simple Lucky Number Generator</h2>
 <form id="generatorForm">
     <div>
-        <input type="submit" id="generate"  value="Generate Lucky Numbers"/>
+        <input type="submit" id="generate"  value="Generate Lucky Number"/>
     </div>
     <div>
         <input type="text" id="output1" value=""/>
@@ -65,26 +54,25 @@ input, select, button, #resultBox {
     </div>
     <div>
         <input type="button" id="sel1" value="1" onclick="setSelected(1)"/>
+        <!-- <input type="button" id="sel2" value="2" onclick="alert('You clicked 2')"/> -->
         <input type="button" id="sel2" value="2" onclick="setSelected(2)"/>
         <input type="button" id="sel3" value="3" onclick="setSelected(3)"/>
         <input type="button" id="sel4" value="4" onclick="setSelected(4)"/>
-    </div>
-    <div>
-        <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
+        <!-- <button id="sel4" value="4">4</button> -->
+        <!-- <button id="sel5" value="5">5</button> -->
+        <div>
+            <input type="button" id="sel5" value="5" onclick="setSelected(5)"/>
         <input type="button" id="sel6" value="6" onclick="setSelected(6)"/>
+        <!-- <button id="sel6" value="6">6</button> -->
         <input type="button" id="sel7" value="7" onclick="setSelected(7)"/>
         <input type="button" id="sel8" value="8" onclick="setSelected(8)"/>
         <input type="button" id="sel9" value="9" onclick="setSelected(9)"/>
+
     </div>
 </form>
-<h3 id="userMsg"></h3>
 <script>
     function setSelected(number) { 
         document.getElementById("selection").value = number;
-    }
-    function setUsrMsg(value) { 
-        const usrMsg = document.getElementById('userMsg');
-        usrMsg.innerText = value
     }
     function chooseApp(selVal) { 
         app = 'onex'
@@ -108,45 +96,27 @@ input, select, button, #resultBox {
         }
         return app
     }
-    function handleNumberSlots(data) { 
-        var number1 = data.number1
-        var number2 = data.number2
-        var number3 = data.number3
-        
-        document.getElementById('output1').value = number1;
-        document.getElementById('output2').value = number2;
-        document.getElementById('output3').value = number3;
-    }
     document.getElementById("generatorForm").onsubmit = function(event) {
         event.preventDefault();
         var apiUrl = '';
         const selVal = document.getElementById("selection").value
         if(selVal && selVal !== '') {
-            const dplmtStem =  'http://127.0.0.1:3000';
-            // const dplmtStem =  '${DEPLOYMENT_STRING_CHANGE_THIS_FOR_UPLOAD}';                 
+            const dplmtStem =  'http://127.0.0.1:3000';                 
             const app = chooseApp(selVal)
             apiUrl = `${dplmtStem}/${app}/${selVal}`
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    setUsrMsg('')
-                    handleNumberSlots(data);
-                    // var number1 = data.number1
-                    // var number2 = data.number2
-                    // var number3 = data.number3
+                    var number1 = data.number1
+                    var number2 = data.number2
+                    var number3 = data.number3
                     
-                    // document.getElementById('output1').value = number1;
-                    // document.getElementById('output2').value = number2;
-                    // document.getElementById('output3').value = number3;
+                    document.getElementById('output1').value = number1;
+                    document.getElementById('output2').value = number2;
+                    document.getElementById('output3').value = number3;
                 })
-                    
-                
-                .catch(error => {
-                    console.error('Error:',error);
-                    handleNumberSlots(error);
-                })
+                .catch(error => console.error('Error:',error))
         }
-        
         // if(document.getElementById("selection").value == 1) {
         // }
     };

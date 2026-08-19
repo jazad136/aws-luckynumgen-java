@@ -4,6 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import static com.jschway.luckynumgen.HistoryPull.getFromS3;
+import static com.jschway.luckynumgen.HistoryPull.uploadToS3;
 import com.jschway.luckynumgen.response.LuckyNumberMaxout;
 import com.jschway.luckynumgen.response.LuckyNumberMessage;
 import com.jschway.luckynumgen.response.LuckyNumberMessages;
@@ -12,9 +14,7 @@ import com.jschway.luckynumgen.response.LuckyNumbersAttrsResponseType;
 import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
 import com.jschway.luckynumgen.s3model.ListBundleMessage;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -23,19 +23,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handler for requests to Lambda function.
  */
-public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class HandleThreeNoS3 implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     private static ObjectMapper mapper;
     private static String numberInKey;
     private static String numberInBucket;
@@ -76,9 +71,6 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
         if(num1.isBlank()) {
             output = mapper.writeValueAsString(new LuckyNumberMaxout(
                     String.format("no more %s's", numberIn)));
-            return response
-                        .withStatusCode(429) // too many requests
-                        .withBody(output);
         }
         List<String> maxedout = new LinkedList<>();
         // upload to S3
@@ -96,12 +88,12 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                 maxedout.add(digit);
         }
         if(!maxedout.isEmpty()) {
-            LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
-            numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
-            output = mapper.writeValueAsString(numbersMsg);
-        }
-        else
-            output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
+                LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
+                numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
+                output = mapper.writeValueAsString(numbersMsg);
+            }
+            else
+                output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
 
 
         return response
@@ -121,41 +113,6 @@ public class HandleThree implements RequestHandler<APIGatewayProxyRequestEvent, 
                     ends.add(k+numberIn);
         }
         return new ListBundleMessage(starts, ends);
-    }
-    public String remainderFileString(String numberIn, List<String> previous) { 
-        final LinkedList<String> starts = new LinkedList<>();
-        final LinkedList<String> ends = new LinkedList<>();
-        for(int j = 1; j <= 9; j++) 
-            if(previous.contains(numberIn+j)) 
-                starts.add(numberIn+j);
-        for (int k = 1; k <= 9; k++) {
-            if(!(""+k).equals(numberIn)) // don't insert repeats in second list
-                if(previous.contains(k + numberIn))
-                    ends.add(k+numberIn);
-        }
-        ListBundleMessage generated = new ListBundleMessage(starts, ends);
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(generated);
-    }
-    public static String getFromS3(S3Client s3Client, String bucketName, String bucketKey)  {
-        try (ResponseInputStream<GetObjectResponse> body = s3Client.getObject(b -> b.bucket(bucketName).key(bucketKey));) { 
-            String toReturn = new String(body.readAllBytes(), StandardCharsets.UTF_8);
-            body.abort();
-            return toReturn;
-        } catch(IOException iex) { 
-            return iex.getMessage();
-        } catch(S3Exception | SdkClientException e) {
-            return e.getMessage();
-        }
-    }
-    public static String uploadToS3(S3Client s3Client, String bucketName, String bucketKey, String content) {
-        try {
-            RequestBody body = RequestBody.fromString(content);
-            s3Client.putObject(b -> b.bucket(bucketName).key(bucketKey), body);
-            return "";
-        } catch(S3Exception | SdkClientException e) {
-            return e.getMessage();
-        }
     }
     public static LuckyNumberMessages getMessagesCollection(List<LuckyNumberMessage> simpleMessages) { 
         return new LuckyNumberMessages(simpleMessages.stream()

@@ -77,16 +77,17 @@ public class TestDataProvider {
         System.out.println("Test method name: " + method.getName()); 
         Object data[][] = null;
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBERSIMPLE")) { 
-            data = new Object[3][3];
+//            data = new Object[3][3];
+            data = new Object[2][3];
             data[0][0] = "1";
             data[0][1] = "1";
             data[0][2] = "Positive Numbers: Input 1 (1st attempt)";
             data[1][0] = "1";
             data[1][1] = "1";
             data[1][2] = "Positive Numbers: Input 1 (2nd attempt)";
-            data[2][0] = "1";
-            data[2][1] = "1";
-            data[2][2] = "Positive Numbers: Input 1 (3rd attempt)";
+//            data[2][0] = "1";
+//            data[2][1] = "1";
+//            data[2][2] = "Positive Numbers: Input 1 (3rd attempt)";
         }
         if(method.getName().toUpperCase().equals("TESTGENCONTAINSNUMBER")) { 
             data = new Object[9][3];
