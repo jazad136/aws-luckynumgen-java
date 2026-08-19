@@ -15,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;

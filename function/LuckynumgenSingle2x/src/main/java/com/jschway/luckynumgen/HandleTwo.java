@@ -4,7 +4,6 @@ import com.jschway.luckynumgen.response.LuckyNumberMessage;
 import com.jschway.luckynumgen.s3model.ListBundleMessage;
 import com.jschway.luckynumgen.response.LuckyNumberMessages;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;

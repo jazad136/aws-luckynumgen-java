@@ -71,5 +71,5 @@ public class LuckyNumbersAttrsResponseType {
     public void setAttributes(LuckyNumbersAttributes value) { this.attributes = value; } 
     
     @JsonGetter("type")
-    public String getType() { return "exception"; }
+    public String getType() { return ""; }
 }

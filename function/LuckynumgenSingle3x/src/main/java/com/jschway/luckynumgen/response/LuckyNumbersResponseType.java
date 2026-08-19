@@ -61,7 +61,7 @@ public class LuckyNumbersResponseType {
     public void setNumber3(String number3) { this.number3 = number3; }
     
     @JsonGetter("type")
-    public String getType() { return "numbers"; }
+    public String getType() { return ""; }
     
     
 }
