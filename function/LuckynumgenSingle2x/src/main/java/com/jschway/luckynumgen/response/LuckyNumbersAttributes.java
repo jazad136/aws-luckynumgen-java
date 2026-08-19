@@ -20,15 +20,16 @@ public class LuckyNumbersAttributes {
         attributes = new LinkedHashMap<>();
     }
     public LuckyNumbersAttributes(String key1, Object value1) { 
-        this.attributes = new LinkedHashMap<>();
+        attributes = new LinkedHashMap<>();
         attributes.put(key1, value1);
     }
     public LuckyNumbersAttributes(String key1, Object value1, String key2, Object value2) { 
-        this.attributes = new LinkedHashMap<>();
+        attributes = new LinkedHashMap<>();
         attributes.put(key1, value1);
         attributes.put(key2, value2);
     }
     public LuckyNumbersAttributes(String key, List<String> values) { 
+        attributes = new LinkedHashMap<>();
         attributes.put(key, values);
     }
 
