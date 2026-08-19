@@ -6,7 +6,9 @@
             <!--<class name="com.jschway.luckynumgen.HandleTest"/>-->
             <class name="com.jschway.luckynumgen.tests.handle.HandleTest2">
                 <methods>
-                    <include name="genThreeNumbers"/>
+                    <include name="genThreeNumbers1x"/>
+                    <include name="genThreeNumbers2x"/>
+                    <include name="genThreeNumbers3x"/>
                 </methods>
             </class>
         </classes>

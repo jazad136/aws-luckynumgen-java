@@ -1,4 +1,4 @@
-package com.jschway.luckynumgen;
+package com.jschway.luckynumgen.response;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
