@@ -26,8 +26,7 @@ CHANGELOG
 - 08/17 : Handle error in frontend when no new numbers can be generated (any input)
 - 08/18 : Applying code style changes across functions. 
 - Tests reveal some impls are still uneven across 1-3/4-6/7-9.
-
-  
+- 08/19 : Created full_s3_directories to capture what s3 looks like when all 2-digit numbers have been generated
 NOTES: 
 
 - wow! 
