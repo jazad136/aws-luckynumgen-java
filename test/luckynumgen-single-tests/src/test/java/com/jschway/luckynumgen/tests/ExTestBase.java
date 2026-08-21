@@ -1,45 +1,61 @@
 package com.jschway.luckynumgen.tests;
 
+
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.jschway.luckynumgen.tests.config.ExtentReportManager;
+import com.jschway.luckynumgen.tests.config.TestDataProvider;
+import java.time.Duration;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
+import org.testng.annotations.Factory;
 import org.testng.asserts.SoftAssert;
 
 /**
  *
- * @author jsaddle
+ * @author JonathanSaddler
  */
-public abstract class TestBase {
+public abstract class ExTestBase {
     protected ExtentReports extent;
     protected ExtentTest testReport;
     protected SoftAssert softAssert;
     private String testNameSuffix;
     
+    WebDriver driver;
+    String testNamePrepend;
+    String testUrl;
+    
+    @Factory(dataProviderClass = TestDataProvider.class, dataProvider = "dataProviderScenario1Tests")
+    public ExTestBase(String testPrepend) {
+        this.testNamePrepend = testPrepend;
+        this.testUrl = "https://jqueryui.com"; // default is jQueryUI.com
+    }
+    
     @BeforeMethod
-    @Parameters({"testNamePrepend"})
-    public void setup(ITestResult res, @Optional String testNamePrepend) {
+    public void setup(ITestResult res) {
         this.extent = ExtentReportManager.getReporter();
-        testNamePrepend = testNamePrepend != null && !testNamePrepend.equals("testNamePrepend") ? testNamePrepend : "";
         this.softAssert = new SoftAssert();
-        setTestNameSuffix(retrieveTestNameSuffix(res));
+        this.testNameSuffix = retrieveTestNameSuffix(res);
         this.testReport = extent.createTest(getFullTestName(testNamePrepend));
         res.setAttribute("reporterObject", testReport);
+//        driver = new ChromeDriver();
+//        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(60));
+//        driver.get(testUrl);
     }
     
     @AfterMethod
-    public void teardown() { 
+    public void finish() { 
         extent.flush();
+//        driver.quit();
     }
-    
+    public String getFullTestName(String prepend) {  return prepend + " " + testNameSuffix; }
     protected void setTestNameSuffix(String testNameSuffix) { this.testNameSuffix = testNameSuffix; } 
     protected String getTestNameSuffix() { return testNameSuffix; }
-    public String getFullTestName(String prepend) {  return prepend + " " + testNameSuffix; }
     public abstract String retrieveTestNameSuffix(ITestResult res);
+    public void setTestUrl(String testUrl) { this.testUrl = testUrl; } 
     
     public void i(String msg) {
         System.out.println(msg);

@@ -14,36 +14,28 @@ import org.testng.annotations.DataProvider;
 public class TestDataProvider {
     
     @DataProvider
+    public static Object[][] dataProviderLogicSuite() { 
+        return new Object[][]{{"Logic Suite"}};
+    }
+    @DataProvider
     public static Object[][] methodDataProviderLogicSuite(Method method) {
         // separate data for each test
         System.out.println("Test method name: " + method.getName()); 
         Object data[][] = null;
         if(method.getName().toUpperCase().equals("GENTHREENUMBERS1X")) { 
-            data = new Object[3][2];
-            data[0][0] = "1";
-            data[0][1] = "Gen Three Numbers: Input 1";
-            data[1][0] = "1";
-            data[1][1] = "Gen Three Numbers: Input 1";
-            data[2][0] = "1";
-            data[2][1] = "Gen Three Numbers: Input 1";
+            data = new Object[][]{{"1"},{"1"},{"1"}};
         }
         if(method.getName().toUpperCase().equals("GENTHREENUMBERS2X")) { 
-            data = new Object[3][2];
+            data = new Object[3][1];
             data[0][0] = "4";
-            data[0][1] = "Gen Three Numbers: Input 4";
             data[1][0] = "4";
-            data[1][1] = "Gen Three Numbers: Input 4";
             data[2][0] = "4";
-            data[2][1] = "Gen Three Numbers: Input 4";
         }
         if(method.getName().toUpperCase().equals("GENTHREENUMBERS3X")) { 
-            data = new Object[3][2];
+            data = new Object[3][1];
             data[0][0] = "7";
-            data[0][1] = "Gen Three Numbers: Input 7";
             data[1][0] = "7";
-            data[1][1] = "Gen Three Numbers: Input 7";
             data[2][0] = "7";
-            data[2][1] = "Gen Three Numbers: Input 7";
         }
         return data;
     }
