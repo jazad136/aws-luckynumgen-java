@@ -3,6 +3,8 @@ package com.jschway.luckynumgen.status;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jschway.luckynumgen.HistoryPull;
 import static com.jschway.luckynumgen.PrelimChecks.getReadParameter;
 import com.jschway.luckynumgen.Setup;
@@ -15,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.s3.S3Client;
-import tools.jackson.databind.ObjectMapper;
 
 public class NumberStatus {
     
@@ -50,13 +51,22 @@ public class NumberStatus {
                     .withStatusCode(502)
                     .withBody(output);
             }
-            ListBundle counts = mapper.readValue(s3Outcome, ListBundleMessage.class).getGenerated();
+            ListBundle counts;
+            try {
+                counts = mapper.readValue(s3Outcome, ListBundleMessage.class).getGenerated();
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
             if(bundleFilled(counts, numberIn))
                 maxedOut.add(digit);
         }
         
         var returnVal = new LuckyNumbersResponseType("maxout", maxedOut);
-        output = mapper.writeValueAsString(returnVal);
+        try {
+            output = mapper.writeValueAsString(returnVal);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException( ex);
+        }
         return response
                 .withStatusCode(200)
                 .withBody(output);

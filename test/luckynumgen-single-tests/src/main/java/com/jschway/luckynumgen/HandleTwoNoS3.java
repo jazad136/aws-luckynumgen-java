@@ -4,12 +4,11 @@ import com.jschway.luckynumgen.response.LuckyNumberMessage;
 import com.jschway.luckynumgen.s3model.ListBundleMessage;
 import com.jschway.luckynumgen.response.LuckyNumberMessages;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import static com.jschway.luckynumgen.HistoryPull.getFromS3;
-import static com.jschway.luckynumgen.HistoryPull.uploadToS3;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jschway.luckynumgen.response.LuckyNumberMaxout;
 import com.jschway.luckynumgen.response.LuckyNumbersAttributes;
 import com.jschway.luckynumgen.response.LuckyNumbersAttrsResponseType;
@@ -29,7 +28,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handler for requests to Lambda function.
@@ -60,14 +58,14 @@ public class HandleTwoNoS3 implements RequestHandler<APIGatewayProxyRequestEvent
                 default -> "";
             };
         }
-        S3Client s3Client = S3Client.builder()
-            .region(Region.US_EAST_1)
-            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
-            .forcePathStyle(true)
-            .build();
+//        S3Client s3Client = S3Client.builder()
+//            .region(Region.US_EAST_1)
+//            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+//            .forcePathStyle(true)
+//            .build();
+        S3Client s3Client = null;
         
-        
-        String output;
+        String output = null;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
                     .withMultiValueHeaders(multiValueHeaders);
@@ -88,35 +86,56 @@ public class HandleTwoNoS3 implements RequestHandler<APIGatewayProxyRequestEvent
             String num2 = newLuckyNumber(numberIn, newNumbers, previous);
             String num3 = newLuckyNumber(numberIn, newNumbers, previous);
             if(num1.isBlank()) {
+                try {
                 output = mapper.writeValueAsString(new LuckyNumberMaxout(
                         String.format("no more %s's", numberIn)));
+                } catch(JsonProcessingException e) { 
+                    throw new RuntimeException(e);
+                }
                 return response
                         .withStatusCode(429) // too many requests
                         .withBody(output);
             }
             // upload to S3
             LinkedList<String> maxedout = new LinkedList<>();
-//            for(String digit : affectedDigits(newNumbers)) { 
-//                String bucketKey = "single/0" + digit + ".json";
-//                
-//                ListBundleMessage counts = remainderFile(digit, previous);
-//                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, mapper.writeValueAsString(counts));
-//                if(!result.isEmpty()) {
-//                    output = mapper.writeValueAsString(new LuckyNumberMessages(result));
-//                    return response
-//                        .withStatusCode(502)
-//                        .withBody(output);
-//                }
-//                if(PrelimChecks.bundleFilled(counts.getGenerated(), numberIn))
-//                    maxedout.add(digit);
-//            }
+            for(String digit : affectedDigits(newNumbers)) { 
+                String bucketKey = "single/0" + digit + ".json";
+                
+                ListBundleMessage counts = remainderFile(digit, previous);
+                String result;
+                try {
+                    result = HistoryPull.uploadToS3(s3Client, BUCKETNAME, bucketKey, mapper.writeValueAsString(counts));
+                } catch (JsonProcessingException ex) {
+                    throw new RuntimeException(ex);
+                }
+                if(!result.isEmpty()) {
+                    try {
+                        output = mapper.writeValueAsString(new LuckyNumberMessages(result));
+                    } catch (JsonProcessingException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    return response
+                        .withStatusCode(502)
+                        .withBody(output);
+                }
+                if(PrelimChecks.bundleFilled(counts.getGenerated(), numberIn))
+                    maxedout.add(digit);
+            }
             if(!maxedout.isEmpty()) {
                 LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
                 numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
-                output = mapper.writeValueAsString(numbersMsg);
+                try {
+                    output = mapper.writeValueAsString(numbersMsg);
+                } catch (JsonProcessingException ex) {
+                    System.getLogger(HandleTwoNoS3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
             }
             else
-                output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
+                try {
+                    output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
+                } catch (JsonProcessingException ex) {
+                    System.getLogger(HandleTwoNoS3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
         }
         return response
                 .withStatusCode(200)
