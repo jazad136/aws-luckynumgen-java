@@ -42,23 +42,17 @@
           <artifactId>extentreports</artifactId>
           <version>5.1.1</version>
       </dependency>
-     <dependency>
-          <groupId>io.rest-assured</groupId>
-          <artifactId>rest-assured</artifactId>
-          <version>6.0.1</version>
-          <scope>test</scope>
-      </dependency>
       <dependency>
           <groupId>software.amazon.awssdk</groupId>
           <artifactId>s3</artifactId>
           <version>2.47.6</version>
       </dependency>
-      <dependency>
+<!--      <dependency>
         <groupId>tools.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>3.2.1</version>
         <scope>compile</scope>
-      </dependency>
+      </dependency>-->
     </dependencies>
     <build>
         <testResources><testResource><directory>src/test/resources</directory></testResource></testResources>
