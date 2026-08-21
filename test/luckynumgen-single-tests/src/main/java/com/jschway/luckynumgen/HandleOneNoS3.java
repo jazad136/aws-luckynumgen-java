@@ -15,10 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.jschway.luckynumgen.HistoryPull.getFromS3;
 import static com.jschway.luckynumgen.HistoryPull.uploadToS3;
 import static com.jschway.luckynumgen.PrelimChecks.gatherPrevious;
@@ -27,7 +27,6 @@ import com.jschway.luckynumgen.response.LuckyNumberMessage;
 import com.jschway.luckynumgen.response.LuckyNumberMessages;
 import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
 import com.jschway.luckynumgen.s3model.ListBundleMessage;
-import java.net.URI;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,9 +38,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handler for requests to Lambda function.
@@ -71,12 +68,12 @@ public class HandleOneNoS3 implements RequestHandler<APIGatewayProxyRequestEvent
                 default -> "";
             };
         }
-        S3Client s3Client = S3Client.builder()
-            .region(Region.US_EAST_1)
-            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
-            .forcePathStyle(true)
-            .build();
-        
+//        S3Client s3Client = S3Client.builder()
+//            .region(Region.US_EAST_1)
+//            .endpointOverride(URI.create("https://s3.us-east-1.amazonaws.com"))
+//            .forcePathStyle(true)
+//            .build();
+        S3Client s3Client = null;
         String output;
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent()
                     .withHeaders(headers)
@@ -86,13 +83,10 @@ public class HandleOneNoS3 implements RequestHandler<APIGatewayProxyRequestEvent
         }
         else {
             String readKey = String.format("single/0%s.json", numberIn);
-//            String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
-//            log.log(String.format("s3Content : %s\n",generatedContent));
-//            ObjectMapper mapper = new ObjectMapper();
-//            ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
-//
-//            List<String> previous = gatherPrevious(startsEnds);
-            List<String> previous = new LinkedList<>();
+            String generatedContent = getFromS3(s3Client, BUCKETNAME, readKey);
+            ObjectMapper mapper = new ObjectMapper();
+            ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
+            List<String> previous = gatherPrevious(startsEnds);
             List<String> newNumbers = new LinkedList<>();
             
             String num1 = newLuckyNumber(numberIn, newNumbers, previous);
@@ -103,25 +97,19 @@ public class HandleOneNoS3 implements RequestHandler<APIGatewayProxyRequestEvent
                         String.format("no more %s's", numberIn)));
             }
             // upload to S3
-//            for(String digit : affectedDigits(newNumbers)) { 
-//                String bucketKey = "single/0" + digit + ".json";
-//                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
-//                if(!result.isEmpty()) {
-//                    output = mapper.writeValueAsString(new LuckyNumberMessages(result));
-//                    return response
-//                        .withStatusCode(502)
-//                        .withBody(output);
-//                }
-//            }
+            for(String digit : affectedDigits(newNumbers)) { 
+                String bucketKey = "single/0" + digit + ".json";
+                String result = uploadToS3(s3Client, BUCKETNAME, bucketKey, remainderFileString(digit, previous));
+                if(!result.isEmpty()) {
+                    output = mapper.writeValueAsString(new LuckyNumberMessages(result));
+                    return response
+                        .withStatusCode(502)
+                        .withBody(output);
+                }
+            }
             // improvement, use JSON Object
-
             var returnVal = new LuckyNumbersResponseType("Lucky Number", num1, num2, num3);
             output = mapper.writeValueAsString(returnVal);
-//            String messagePart = "\"message\": \"Lucky Number\"";
-//            String luckyNum1Part = String.format("\"number1\": \"%s\"", num1);
-//            String luckyNum2Part = String.format("\"number2\": \"%s\"", num2);
-//            String luckyNum3Part = String.format("\"number3\": \"%s\"", num3);
-//            output = String.format("{ %s,%s,%s,%s }", messagePart, luckyNum1Part, luckyNum2Part, luckyNum3Part);
         }
         return response
                 .withStatusCode(200)

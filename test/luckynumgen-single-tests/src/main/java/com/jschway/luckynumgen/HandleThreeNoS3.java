@@ -4,6 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.jschway.luckynumgen.HistoryPull.getFromS3;
 import static com.jschway.luckynumgen.HistoryPull.uploadToS3;
 import com.jschway.luckynumgen.response.LuckyNumberMaxout;
@@ -25,7 +27,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handler for requests to Lambda function.
@@ -61,7 +62,12 @@ public class HandleThreeNoS3 implements RequestHandler<APIGatewayProxyRequestEve
         numberInKey = getReadKey(numberIn);
         numberInBucket = getReadBucket();
         String generatedContent = getFromS3(s3Client, numberInBucket, numberInKey);
-        ListBundleMessage startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
+        ListBundleMessage startsEnds;
+        try {
+            startsEnds = mapper.readValue(generatedContent, ListBundleMessage.class);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
         List<String> previous = gatherPrevious(startsEnds);
         List<String> newNumbers = new LinkedList<>();
         
@@ -69,17 +75,29 @@ public class HandleThreeNoS3 implements RequestHandler<APIGatewayProxyRequestEve
         String num2 = newLuckyNumber(numberIn, newNumbers, previous);
         String num3 = newLuckyNumber(numberIn, newNumbers, previous);
         if(num1.isBlank()) {
-            output = mapper.writeValueAsString(new LuckyNumberMaxout(
-                    String.format("no more %s's", numberIn)));
+            try {
+                output = mapper.writeValueAsString(new LuckyNumberMaxout(String.format("no more %s's", numberIn)));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
         }
         List<String> maxedout = new LinkedList<>();
         // upload to S3
         for(String digit : affectedDigits(newNumbers)) { 
             String bucketKey = getReadKey(digit);
             ListBundleMessage counts = remainderFile(digit, previous);
-            String result = uploadToS3(s3Client, numberInBucket, bucketKey, mapper.writeValueAsString(counts));
+            String result;
+            try {
+                result = uploadToS3(s3Client, numberInBucket, bucketKey, mapper.writeValueAsString(counts));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
             if(!result.isEmpty()) {
-                output = mapper.writeValueAsString(new LuckyNumberMessages(result));
+                try {
+                    output = mapper.writeValueAsString(new LuckyNumberMessages(result));
+                } catch (JsonProcessingException ex) {
+                    throw new RuntimeException(ex);
+                }
                 return response
                     .withStatusCode(502)
                     .withBody(output);
@@ -88,12 +106,20 @@ public class HandleThreeNoS3 implements RequestHandler<APIGatewayProxyRequestEve
                 maxedout.add(digit);
         }
         if(!maxedout.isEmpty()) {
-                LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
-                numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
+            LuckyNumbersAttrsResponseType numbersMsg = new LuckyNumbersAttrsResponseType("Lucky Number", num1, num2, num3);
+            numbersMsg.setAttributes(new LuckyNumbersAttributes("maxedout", maxedout));
+            try {
                 output = mapper.writeValueAsString(numbersMsg);
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
             }
-            else
+        }
+        else
+            try {
                 output = mapper.writeValueAsString(new LuckyNumbersResponseType("Lucky Number", num1, num2, num3));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
 
 
         return response

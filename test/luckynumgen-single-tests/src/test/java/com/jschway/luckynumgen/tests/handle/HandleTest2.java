@@ -1,28 +1,34 @@
 package com.jschway.luckynumgen.tests.handle;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jschway.luckynumgen.Handle;
 import com.jschway.luckynumgen.HandleOneNoS3;
 import com.jschway.luckynumgen.HandleTwoNoS3;
 import com.jschway.luckynumgen.response.LuckyNumbersResponseType;
-import com.jschway.luckynumgen.tests.TestBase;
+import com.jschway.luckynumgen.tests.ExTestBase;
 import com.jschway.luckynumgen.tests.TestHelpMethods;
 import com.jschway.luckynumgen.tests.config.TestDataProvider;
 import java.util.LinkedHashSet;
 import org.testng.ITestResult;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
+import software.amazon.awssdk.thirdparty.jackson.core.JsonProcessingException;
+import tools.jackson.databind.ObjectMapper;
 
-public class HandleTest2 extends TestBase {
+public class HandleTest2 extends ExTestBase {
+
+    @Factory(dataProvider = "dataProviderLogicSuite", dataProviderClass = TestDataProvider.class)
+    public HandleTest2(String testNamePrepend) {
+        super(testNamePrepend);
+    }
     
     boolean[][] coverage;
     private int rowLimit;
     private int colLimit;
     
-    @BeforeMethod(alwaysRun=true)
-    public void setUp() { 
+    @BeforeClass(alwaysRun=true)
+    public void setUpCoverage() { 
         colLimit = rowLimit = 10;
         coverage = new boolean[rowLimit][colLimit];
     }
@@ -68,7 +74,8 @@ public class HandleTest2 extends TestBase {
             genNum++;
         }
     }
-    @Test
+    @Test(dataProviderClass = TestDataProvider.class, 
+          dataProvider = "methodDataProviderLogicSuite")
     public void genThreeNumbers3x(String inputNumberIn) throws JsonProcessingException { 
         HandleTwoNoS3 handler = new HandleTwoNoS3();
         LinkedHashSet<String> selections = new LinkedHashSet<>();

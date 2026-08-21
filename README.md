@@ -27,6 +27,9 @@ CHANGELOG
 - 08/18 : Applying code style changes across functions. 
 - Tests reveal some impls are still uneven across 1-3/4-6/7-9.
 - 08/19 : Created full_s3_directories to capture what s3 looks like when all 2-digit numbers have been generated
+- 08/20 : Generator generated numbers previously generated. 
+- Created a local test intended to replicate cloud on local file system.  
+- Local and Cloud JSON parser imports conflict
 NOTES: 
 
 - wow! 
